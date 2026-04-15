@@ -29,9 +29,6 @@ const ABBREVIATIONS = new Map([
   ["it", "information technology"],
 ]);
 
-const NOISE_RE =
-  /\b(remote|hybrid|on-?site|temporary|temp|seasonal|immediate|urgent|hiring|now|apply)\b/gi;
-
 const SPECIAL_CHARS_RE = /[\/\-()\[\]{}|\\:;,!@#$%^&*+=~`<>?'"]+/g;
 
 const CANONICAL_TITLES = new Map([
@@ -93,7 +90,7 @@ export function normalizeJobTitle(rawTitle, tracker) {
   let title = (rawTitle == null ? "" : String(rawTitle)).trim();
 
   if (!title) {
-    tracker?.record("TTL-06", "job_title_normalization", "Title is empty after cleaning", {
+    tracker?.record("TTL-06", "job_title_normalization", "Cannot produce normalizedTitle: input was empty/whitespace, or all text was removed by cleaning — row rejected.", {
       before: { title: rawTitle }, after: null, rejected: true,
     });
     return { ok: false, normalizedTitle: null, rulesApplied: ["TTL-06"], reason: "empty_title" };
@@ -105,7 +102,7 @@ export function normalizeJobTitle(rawTitle, tracker) {
   title = title.toLowerCase();
   if (original !== title) {
     rulesApplied.push("TTL-01");
-    tracker?.record("TTL-01", "job_title_normalization", "Lowercase everything", {
+    tracker?.record("TTL-01", "job_title_normalization", "Lowercased the full title so abbreviation expansion and canonical matching are case-insensitive.", {
       before: { title: original }, after: { title },
     });
   }
@@ -118,18 +115,8 @@ export function normalizeJobTitle(rawTitle, tracker) {
     .join(" ");
   if (title !== beforeAbbr) {
     rulesApplied.push("TTL-02");
-    tracker?.record("TTL-02", "job_title_normalization", "Expand abbreviations", {
+    tracker?.record("TTL-02", "job_title_normalization", "Expanded token-level abbreviations (e.g. Sr → senior, SWE → software engineer) using a fixed dictionary.", {
       before: { title: beforeAbbr }, after: { title },
-    });
-  }
-
-  // TTL-03 — Strip noise words
-  const beforeNoise = title;
-  title = collapse(title.replace(NOISE_RE, " "));
-  if (title !== beforeNoise) {
-    rulesApplied.push("TTL-03");
-    tracker?.record("TTL-03", "job_title_normalization", "Strip noise words", {
-      before: { title: beforeNoise }, after: { title },
     });
   }
 
@@ -138,7 +125,7 @@ export function normalizeJobTitle(rawTitle, tracker) {
   title = collapse(title.replace(SPECIAL_CHARS_RE, " "));
   if (title !== beforeSpec) {
     rulesApplied.push("TTL-04");
-    tracker?.record("TTL-04", "job_title_normalization", "Strip special characters", {
+    tracker?.record("TTL-04", "job_title_normalization", "Removed punctuation and bracket characters (slashes, dashes, parentheses, etc.) and collapsed extra spaces.", {
       before: { title: beforeSpec }, after: { title },
     });
   }
@@ -147,7 +134,7 @@ export function normalizeJobTitle(rawTitle, tracker) {
   const canonical = CANONICAL_TITLES.get(title);
   if (canonical) {
     if (canonical !== title) {
-      tracker?.record("TTL-05", "job_title_normalization", "Map to canonical title", {
+      tracker?.record("TTL-05", "job_title_normalization", "Matched the cleaned title to a known canonical role label (e.g. synonyms for software engineer) for consistent dashboards and search.", {
         before: { title }, after: { title: canonical },
       });
       title = canonical;
@@ -157,7 +144,7 @@ export function normalizeJobTitle(rawTitle, tracker) {
 
   // TTL-06 — Empty after cleaning
   if (!title) {
-    tracker?.record("TTL-06", "job_title_normalization", "Title is empty after cleaning", {
+    tracker?.record("TTL-06", "job_title_normalization", "Cannot produce normalizedTitle: input was empty/whitespace, or all text was removed by cleaning — row rejected.", {
       before: { title: rawTitle }, after: null, rejected: true,
     });
     return { ok: false, normalizedTitle: null, rulesApplied: ["TTL-06"], reason: "empty_title" };

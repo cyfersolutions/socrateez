@@ -12,7 +12,7 @@ export function normalizeDate(rawDate, tracker) {
   const raw = (rawDate == null ? "" : String(rawDate)).trim();
 
   if (!raw) {
-    tracker?.record("DTE-05", "date_freshness", "Date missing entirely", {
+    tracker?.record("DTE-05", "date_freshness", "No usable post date: field empty or text could not be parsed — postedAt and daysSincePosted are null; job is still kept.", {
       before: { date: rawDate },
       after: { postedAt: null, daysSincePosted: null },
     });
@@ -27,7 +27,7 @@ export function normalizeDate(rawDate, tracker) {
     if (!isNaN(d)) {
       parsed = d;
       rulesApplied.push("DTE-01");
-      tracker?.record("DTE-01", "date_freshness", "ISO date format", {
+      tracker?.record("DTE-01", "date_freshness", "String started with YYYY-MM-DD — parsed as ISO calendar date for postedAt.", {
         before: { date: raw }, after: { postedAt: d.toISOString() },
       });
     }
@@ -43,7 +43,7 @@ export function normalizeDate(rawDate, tracker) {
       if (!isNaN(d)) {
         parsed = d;
         rulesApplied.push("DTE-04");
-        tracker?.record("DTE-04", "date_freshness", "Ambiguous slash format (MM/DD/YY)", {
+        tracker?.record("DTE-04", "date_freshness", "Slash date M/D/YY or MM/DD/YYYY — interpreted as US month/day/year with 2-digit year rules applied.", {
           before: { date: raw }, after: { postedAt: d.toISOString() },
         });
       }
@@ -63,7 +63,7 @@ export function normalizeDate(rawDate, tracker) {
       else if (unit === "year") now.setFullYear(now.getFullYear() - count);
       parsed = now;
       rulesApplied.push("DTE-03");
-      tracker?.record("DTE-03", "date_freshness", "Relative format", {
+      tracker?.record("DTE-03", "date_freshness", "Relative phrase like \"3 days ago\" or \"2 weeks ago\" — converted to an approximate postedAt from sync time.", {
         before: { date: raw }, after: { postedAt: parsed.toISOString() },
       });
     }
@@ -75,7 +75,7 @@ export function normalizeDate(rawDate, tracker) {
     if (!isNaN(d)) {
       parsed = d;
       rulesApplied.push("DTE-02");
-      tracker?.record("DTE-02", "date_freshness", "Human readable format", {
+      tracker?.record("DTE-02", "date_freshness", "Passed to the JavaScript Date parser as a natural-language date string (e.g. \"Jan 5, 2025\").", {
         before: { date: raw }, after: { postedAt: d.toISOString() },
       });
     }
@@ -83,7 +83,7 @@ export function normalizeDate(rawDate, tracker) {
 
   // Still unparseable → treat as missing
   if (!parsed) {
-    tracker?.record("DTE-05", "date_freshness", "Date missing entirely", {
+    tracker?.record("DTE-05", "date_freshness", "No usable post date: field empty or text could not be parsed — postedAt and daysSincePosted are null; job is still kept.", {
       before: { date: raw },
       after: { postedAt: null, daysSincePosted: null },
     });

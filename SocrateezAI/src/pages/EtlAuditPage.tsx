@@ -39,67 +39,71 @@ const CATEGORY_META: Record<
 > = {
   eligibility_filter: {
     label: 'Eligibility Check',
-    description: 'Checked which jobs have salary, job title, and listing title',
+    description:
+      'Counts how many raw rows fall into each bucket before the main pipeline. Only rows with both a non-empty salary and a non-empty job title (filter) are processed; others are skipped. Also reports how many rows lack a listing title (they can still run if salary + filter title exist).',
     icon: Filter,
     color: 'text-red-600 bg-red-500/10',
   },
   salary_normalization: {
     label: 'Salary Cleanup',
-    description: 'Converted all salaries to a standard annual USD format',
+    description:
+      'Parses the raw salary string into a single annual USD amount and stores it as a formatted string (e.g. $120,000). Detects hourly vs annual cues, handles k-suffix and common data-entry mistakes (e.g. accidental ×2,080). Rejects rows that are unparseable, out of band ($20k–$500k), or fail the trainee/intern listing-title sanity cap.',
     icon: Hash,
     color: 'text-emerald-600 bg-emerald-500/10',
   },
   remote_detection: {
     label: 'Remote Detection',
-    description: 'Determined which jobs are remote based on location fields',
+    description:
+      'Sets isRemote from the four location fields (Location Label, State, City, Country). If all four are present and non-whitespace, the job is treated as not remote. If any are missing or only whitespace, the job is treated as remote for analytics (no reliable on-site address).',
     icon: Activity,
     color: 'text-violet-600 bg-violet-500/10',
   },
   job_type_classification: {
     label: 'Job Type Detection',
-    description: 'Checked both job title and listing title for type keywords (intern, contract, etc.)',
+    description:
+      'Scans the filter title first, then the listing title, for employment-type keywords (internship, contract, part-time, freelance). Sets jobType and removes the matched keyword from the title string that contained it so later steps see a cleaner title.',
     icon: Layers,
     color: 'text-blue-600 bg-blue-500/10',
   },
-  role_detection: {
-    label: 'Role Detection',
-    description: 'Compared both titles and picked the best one as the canonical role',
-    icon: Activity,
-    color: 'text-cyan-600 bg-cyan-500/10',
-  },
   job_title_normalization: {
     label: 'Title Cleanup',
-    description: 'Standardized the selected title by fixing abbreviations and casing',
+    description:
+      'Builds normalizedTitle from the listing title when possible, otherwise the filter title. Applies lowercasing, abbreviation expansion, punctuation removal, and optional mapping to a small set of canonical role names for consistent dashboards.',
     icon: Activity,
     color: 'text-amber-600 bg-amber-500/10',
   },
   date_freshness: {
     label: 'Date Parsing',
-    description: 'Converted posting dates into a consistent format',
+    description:
+      'Parses the raw post date into postedAt (ISO) and daysSincePosted. Tries ISO, slash dates, relative phrases (“3 days ago”), and natural language. Unparseable or empty dates leave postedAt null but do not drop the job.',
     icon: Clock,
     color: 'text-pink-600 bg-pink-500/10',
   },
   location_normalization: {
     label: 'Location Cleanup',
-    description: 'Standardized state codes, country names, and city formatting',
+    description:
+      'Normalizes state names to US postal codes where applicable, maps common country names to ISO codes, title-cases cities, and fills latitude/longitude when the city appears in a built-in coordinate table.',
     icon: Activity,
     color: 'text-teal-600 bg-teal-500/10',
   },
   company_deduplication: {
-    label: 'Company Matching',
-    description: 'Matched company name variations to a single canonical name',
+    label: 'Company Normalization',
+    description:
+      'Lowercases the employer string, strips legal suffixes and parentheticals, then applies an exact alias table (e.g. “Facebook Inc” → meta). No fuzzy string matching — unknown names stay as cleaned text.',
     icon: Database,
     color: 'text-orange-600 bg-orange-500/10',
   },
   skills_extraction: {
     label: 'Skills Detection',
-    description: 'Extracted technology and skill keywords from job listings',
+    description:
+      'Scans combined text from titles and job family fields against a fixed dictionary of technologies (languages, frameworks, cloud, etc.). Produces a deduplicated list of canonical skill labels for filtering and display.',
     icon: Activity,
     color: 'text-indigo-600 bg-indigo-500/10',
   },
   duplicate_detection: {
     label: 'Duplicate Removal',
-    description: 'Identified and flagged duplicate job postings',
+    description:
+      'After all rows are written, groups jobs by an MD5 of normalized title, company, location, and job type. Keeps the newest posting per group and marks older rows as duplicates.',
     icon: XCircle,
     color: 'text-red-600 bg-red-500/10',
   },

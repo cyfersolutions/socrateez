@@ -7,7 +7,6 @@ const PHASE_ORDER = [
   "eligibility_filter",
   "salary_normalization",
   "job_type_classification",
-  "role_detection",
   "job_title_normalization",
   "remote_detection",
   "date_freshness",

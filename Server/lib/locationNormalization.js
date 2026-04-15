@@ -121,7 +121,7 @@ export function normalizeLocation(raw, tracker) {
     if (code && code !== state) {
       normalizedState = code;
       rulesApplied.push("LOC-01");
-      tracker?.record("LOC-01", "location_normalization", "Full state name to code", {
+      tracker?.record("LOC-01", "location_normalization", "US state spelled in full (e.g. California) — replaced with a 2-letter postal code for the cleaned row.", {
         before: { state }, after: { normalizedState: code },
       });
     }
@@ -133,7 +133,7 @@ export function normalizeLocation(raw, tracker) {
     if (std) {
       normalizedCountry = std;
       rulesApplied.push("LOC-02");
-      tracker?.record("LOC-02", "location_normalization", "Country name variants to standard", {
+      tracker?.record("LOC-02", "location_normalization", "Country name or common abbreviation (e.g. USA, UK) — mapped to a 2-letter ISO country code.", {
         before: { country }, after: { normalizedCountry: std },
       });
     } else if (country.length === 2) {
@@ -147,7 +147,7 @@ export function normalizeLocation(raw, tracker) {
     if (fixed !== city) {
       normalizedCity = fixed;
       rulesApplied.push("LOC-03");
-      tracker?.record("LOC-03", "location_normalization", "City casing fix", {
+      tracker?.record("LOC-03", "location_normalization", "City string was title-cased (e.g. SAN FRANCISCO → San Francisco) for display consistency.", {
         before: { city }, after: { normalizedCity: fixed },
       });
     }
@@ -166,13 +166,13 @@ export function normalizeLocation(raw, tracker) {
       latitude = coords.lat;
       longitude = coords.lng;
       rulesApplied.push("LOC-04");
-      tracker?.record("LOC-04", "location_normalization", "Attach geocoordinates", {
+      tracker?.record("LOC-04", "location_normalization", "City + state + country matched a built-in coordinate table — latitude and longitude filled for mapping.", {
         before: { city: normalizedCity, state: normalizedState, country: normalizedCountry },
         after: { latitude, longitude },
       });
     } else {
       rulesApplied.push("LOC-05");
-      tracker?.record("LOC-05", "location_normalization", "Unknown city/state combo — skip geocode", {
+      tracker?.record("LOC-05", "location_normalization", "No coordinate entry for this city/state/country combination — lat/lng left null (location still stored as text).", {
         before: { city: normalizedCity, state: normalizedState, country: normalizedCountry },
         after: { latitude: null, longitude: null },
       });

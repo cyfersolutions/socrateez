@@ -41,33 +41,8 @@ const KNOWN_ALIASES = new Map([
   ["accenture plc", "accenture"], ["accenture llp", "accenture"],
 ]);
 
-function levenshteinSimilarity(a, b) {
-  if (a === b) return 1;
-  const la = a.length;
-  const lb = b.length;
-  if (!la || !lb) return 0;
-  const dp = Array.from({ length: la + 1 }, (_, i) => {
-    const row = new Array(lb + 1);
-    row[0] = i;
-    return row;
-  });
-  for (let j = 0; j <= lb; j++) dp[0][j] = j;
-  for (let i = 1; i <= la; i++) {
-    for (let j = 1; j <= lb; j++) {
-      dp[i][j] = Math.min(
-        dp[i - 1][j] + 1,
-        dp[i][j - 1] + 1,
-        dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
-      );
-    }
-  }
-  return 1 - dp[la][lb] / Math.max(la, lb);
-}
-
-const FUZZY_THRESHOLD = 0.85;
-
 /**
- * Normalize company name: strip suffixes, lowercase, resolve aliases, fuzzy-match.
+ * Normalize company name: strip suffixes, lowercase, resolve known aliases.
  * @returns {{ canonicalCompany: string|null, rulesApplied: string[] }}
  */
 export function normalizeCompany(rawCompany, tracker) {
@@ -75,7 +50,7 @@ export function normalizeCompany(rawCompany, tracker) {
   const raw = (rawCompany == null ? "" : String(rawCompany)).trim();
 
   if (!raw) {
-    tracker?.record("CMP-06", "company_deduplication", "Company field empty", {
+    tracker?.record("CMP-06", "company_deduplication", "Employer name was missing or blank — canonicalCompany is null; job still stored but company-based grouping may be limited.", {
       before: { company: rawCompany }, after: { canonicalCompany: null },
     });
     return { canonicalCompany: null, rulesApplied: ["CMP-06"] };
@@ -85,7 +60,7 @@ export function normalizeCompany(rawCompany, tracker) {
   let name = raw.toLowerCase();
   if (name !== raw) {
     rulesApplied.push("CMP-02");
-    tracker?.record("CMP-02", "company_deduplication", "Normalize casing", {
+    tracker?.record("CMP-02", "company_deduplication", "Lowercased the raw company string for consistent comparison before suffix stripping and alias lookup.", {
       before: { company: raw }, after: { company: name },
     });
   }
@@ -95,7 +70,7 @@ export function normalizeCompany(rawCompany, tracker) {
   name = name.replace(PARENS_RE, " ").replace(LEGAL_SUFFIX_RE, "").replace(/[,.\s]+$/, "").trim();
   if (name !== before) {
     rulesApplied.push("CMP-01");
-    tracker?.record("CMP-01", "company_deduplication", "Strip legal suffixes", {
+    tracker?.record("CMP-01", "company_deduplication", "Removed parenthetical segments and trailing legal suffixes (Inc, LLC, Corp, Ltd, etc.) so the core name can match aliases.", {
       before: { company: before }, after: { company: name },
     });
   }
@@ -104,38 +79,10 @@ export function normalizeCompany(rawCompany, tracker) {
   const alias = KNOWN_ALIASES.get(name);
   if (alias) {
     rulesApplied.push("CMP-04");
-    tracker?.record("CMP-04", "company_deduplication", "Known alias mapping", {
+    tracker?.record("CMP-04", "company_deduplication", "Exact match on an internal alias table (e.g. Meta ← Facebook) — canonicalCompany set to the preferred short name.", {
       before: { company: name }, after: { canonicalCompany: alias },
     });
     return { canonicalCompany: alias, rulesApplied };
-  }
-
-  // CMP-03 / CMP-05 — Fuzzy match against known aliases
-  let bestMatch = null;
-  let bestSim = 0;
-  for (const [key, canonical] of KNOWN_ALIASES) {
-    const sim = levenshteinSimilarity(name, key);
-    if (sim > bestSim) {
-      bestSim = sim;
-      bestMatch = canonical;
-    }
-  }
-
-  if (bestSim >= FUZZY_THRESHOLD && bestMatch) {
-    rulesApplied.push("CMP-03");
-    tracker?.record("CMP-03", "company_deduplication", "Fuzzy match above threshold", {
-      before: { company: name, similarity: Math.round(bestSim * 100) / 100 },
-      after: { canonicalCompany: bestMatch },
-    });
-    return { canonicalCompany: bestMatch, rulesApplied };
-  }
-
-  if (bestSim > 0 && bestSim < FUZZY_THRESHOLD) {
-    rulesApplied.push("CMP-05");
-    tracker?.record("CMP-05", "company_deduplication", "Below fuzzy threshold — keep separate", {
-      before: { company: name },
-      after: { canonicalCompany: name },
-    });
   }
 
   return { canonicalCompany: name, rulesApplied };

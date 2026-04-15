@@ -19,8 +19,8 @@ ${jobFields}
 - sourceRawId: ObjectId (optional), reference to raw import row
 - isRemote: boolean — true unless all of Location Label, State, City, and Country are present and non-empty (incomplete location → remote)
 - etlSalaryFlags: string[] — salary normalization tags (e.g. hourly_explicit, deflate_one_2080)
-- normalizedTitle: string — cleaned, canonical job title picked from whichever title (filter or listing) best matched a known role
-- roleSource: string enum (filter_title | listing_title) — which title produced the normalizedTitle
+- normalizedTitle: string — cleaned job title from listing title when possible, else filter title
+- roleSource: string enum (filter_title | listing_title) — which source field produced normalizedTitle
 - jobType: string enum (full_time | part_time | contract | internship | freelance) — detected from both filter title and listing title
 - postedAt: Date — parsed posting date (ISO)
 - daysSincePosted: number — days since posting

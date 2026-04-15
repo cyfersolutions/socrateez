@@ -2,25 +2,25 @@ const TYPE_PATTERNS = [
   {
     type: "internship",
     ruleId: "JTP-01",
-    desc: "Internship keyword detected",
+    desc: "Internship or co-op wording — jobType set to internship.",
     pattern: /\b(intern(?:ship)?|co-?op)\b/i,
   },
   {
     type: "contract",
     ruleId: "JTP-02",
-    desc: "Contract keyword detected",
+    desc: "Contract or consulting wording — jobType set to contract.",
     pattern: /\b(contract(?:or)?|consulting)\b/i,
   },
   {
     type: "part_time",
     ruleId: "JTP-03",
-    desc: "Part-time keyword detected",
+    desc: "Part-time wording — jobType set to part_time.",
     pattern: /\b(part[\s-]?time)\b/i,
   },
   {
     type: "freelance",
     ruleId: "JTP-04",
-    desc: "Freelance keyword detected",
+    desc: "Freelance or gig wording — jobType set to freelance.",
     pattern: /\b(freelance|freelancer|gig)\b/i,
   },
 ];
@@ -48,10 +48,15 @@ export function classifyJobType(filterTitle, listingTitle, tracker) {
       matchedSource = "filterTitle";
       rulesApplied.push(ruleId);
       if (tracker) {
-        tracker.record(ruleId, "job_type_classification", `${desc} (in filter title)`, {
-          before: { filterTitle, listingTitle },
-          after: { cleanedFilterTitle: cleanedFilter, jobType, source: "filterTitle" },
-        });
+        tracker.record(
+          ruleId,
+          "job_type_classification",
+          `${desc} Match was in the Job Title (filter) field; the keyword was removed from that string only (listing title unchanged for this rule).`,
+          {
+            before: { filterTitle, listingTitle },
+            after: { cleanedFilterTitle: cleanedFilter, jobType, source: "filterTitle" },
+          },
+        );
       }
       break;
     }
@@ -61,10 +66,15 @@ export function classifyJobType(filterTitle, listingTitle, tracker) {
       matchedSource = "listingTitle";
       rulesApplied.push(ruleId);
       if (tracker) {
-        tracker.record(ruleId, "job_type_classification", `${desc} (in listing title)`, {
-          before: { filterTitle, listingTitle },
-          after: { cleanedListingTitle: cleanedListing, jobType, source: "listingTitle" },
-        });
+        tracker.record(
+          ruleId,
+          "job_type_classification",
+          `${desc} Match was in the Listing Title field; the keyword was removed from that string only (filter title unchanged for this rule).`,
+          {
+            before: { filterTitle, listingTitle },
+            after: { cleanedListingTitle: cleanedListing, jobType, source: "listingTitle" },
+          },
+        );
       }
       break;
     }
@@ -73,7 +83,7 @@ export function classifyJobType(filterTitle, listingTitle, tracker) {
   if (!matchedSource) {
     rulesApplied.push("JTP-05");
     if (tracker) {
-      tracker.record("JTP-05", "job_type_classification", "No keyword in either title — default full_time", {
+      tracker.record("JTP-05", "job_type_classification", "No employment-type keyword matched in the filter title or listing title — jobType defaults to full_time; titles unchanged.", {
         before: { filterTitle, listingTitle },
         after: { jobType: "full_time" },
       });

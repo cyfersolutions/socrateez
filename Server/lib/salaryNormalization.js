@@ -9,8 +9,9 @@ export const HOURLY_TO_ANNUAL = 2080;
 /** Reject listings where title suggests junior role but pay is unrealistically high */
 export const TRAINEE_TITLE_MAX_SALARY = 200_000;
 
+/** Matches listing title only (see normalizeSalaryForEtl second arg). */
 const TRAINEE_TITLE_RE =
-  /(trainee|intern|apprentice|entry\s*[- ]?level|co-?op\b|student\b|graduate\s+program)/i;
+  /\b(trainee|intern|apprentice|student)\b|entry\s*[ -]?level|co-?op\b|graduate\s+program/i;
 
 /** After $addFields salaryNum — keep dashboard/search consistent */
 export const aggregationSalaryInRange = {
@@ -21,7 +22,7 @@ export const aggregationSalaryInRange = {
 
 /**
  * @param {unknown} rawSalary
- * @param {string} [jobTitle]
+ * @param {string} [listingTitle] — listing title (trainee cap uses this, not job title filter)
  * @returns {{
  *   ok: boolean,
  *   annual?: number,
@@ -31,7 +32,7 @@ export const aggregationSalaryInRange = {
  *   detail?: number,
  * }}
  */
-export function normalizeSalaryForEtl(rawSalary, jobTitle = "") {
+export function normalizeSalaryForEtl(rawSalary, listingTitle = "") {
   const flags = [];
   const s0 = rawSalary == null ? "" : String(rawSalary).trim();
   if (!s0) return { ok: false, reason: "empty_salary" };
@@ -90,7 +91,7 @@ export function normalizeSalaryForEtl(rawSalary, jobTitle = "") {
     return { ok: false, reason: "out_of_range", detail: annual };
   }
 
-  if (TRAINEE_TITLE_RE.test(String(jobTitle || "")) && annual > TRAINEE_TITLE_MAX_SALARY) {
+  if (TRAINEE_TITLE_RE.test(String(listingTitle || "")) && annual > TRAINEE_TITLE_MAX_SALARY) {
     return { ok: false, reason: "trainee_sanity_cap", detail: annual };
   }
 

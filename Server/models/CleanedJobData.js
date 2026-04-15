@@ -17,8 +17,9 @@ const cleanedJobDataSchema = new mongoose.Schema(
     isRemote: { type: Boolean, default: false },
     etlSalaryFlags: { type: [String], default: [] },
 
-    // ── Role Detection (ROL) + Job Title Normalization (TTL) ────────
+    // ── Job Title Normalization (TTL) ───────────────────────────────
     normalizedTitle: { type: String, trim: true, index: true },
+    /** Which raw title field produced normalizedTitle after JTP cleaning. */
     roleSource: {
       type: String,
       enum: ["filter_title", "listing_title"],

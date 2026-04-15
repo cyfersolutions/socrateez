@@ -177,7 +177,7 @@ export function extractSkills(text, tracker) {
   const raw = (text == null ? "" : String(text)).trim();
 
   if (!raw) {
-    tracker?.record("SKL-05", "skills_extraction", "No skills found", {
+    tracker?.record("SKL-05", "skills_extraction", "No skills extracted: input text was empty or no dictionary keywords matched in the scanned fields — skills array empty.", {
       before: { text: "" }, after: { skills: [] },
     });
     return { skills: [], rulesApplied: ["SKL-05"] };
@@ -204,17 +204,17 @@ export function extractSkills(text, tracker) {
 
   if (skills.length === 0) {
     rulesApplied.push("SKL-05");
-    tracker?.record("SKL-05", "skills_extraction", "No skills found", {
+    tracker?.record("SKL-05", "skills_extraction", "No skills extracted: input text was empty or no dictionary keywords matched in the scanned fields — skills array empty.", {
       before: { text: snippet }, after: { skills: [] },
     });
   } else if (skills.length === 1) {
-    rulesApplied.push("SKL-01");
-    tracker?.record("SKL-01", "skills_extraction", "Exact skill match", {
+    rulesApplied.push("SKL-02");
+    tracker?.record("SKL-02", "skills_extraction", "Exactly one known skill token matched (multi-word patterns first, then single tokens); deduplicated to one canonical label.", {
       before: { text: snippet }, after: { skills },
     });
   } else {
     rulesApplied.push("SKL-04");
-    tracker?.record("SKL-04", "skills_extraction", "Multi-skill extraction", {
+    tracker?.record("SKL-04", "skills_extraction", "Multiple distinct skills matched from the combined text; output is a deduplicated list of canonical skill names.", {
       before: { text: snippet }, after: { skills },
     });
   }

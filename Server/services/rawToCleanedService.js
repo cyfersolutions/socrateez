@@ -5,7 +5,6 @@ import { JobField } from "../models/jobDataFields.js";
 import { normalizeSalaryForEtl, SALARY_MIN_ANNUAL } from "../lib/salaryNormalization.js";
 import { classifyJobType } from "../lib/jobTypeClassification.js";
 import { normalizeJobTitle } from "../lib/jobTitleNormalization.js";
-import { detectRole } from "../lib/roleDetection.js";
 import { normalizeDate } from "../lib/dateNormalization.js";
 import { normalizeLocation } from "../lib/locationNormalization.js";
 import { normalizeCompany } from "../lib/companyNormalization.js";
@@ -45,33 +44,60 @@ function hasCompleteLocation(raw) {
 // ─── Salary audit helper ───────────────────────────────────────────────────────
 
 const SAL_FLAG_MAP = {
-  hourly_explicit: { id: "SAL-01", desc: "Explicit hourly keyword detected" },
-  annual_explicit: { id: "SAL-02", desc: "Explicit annual keyword detected" },
-  annual_plain: { id: "SAL-03", desc: "Plain number in annual range" },
-  k_suffix: { id: "SAL-03", desc: "K-suffix notation (annual)" },
-  hourly_heuristic: { id: "SAL-04", desc: "Plain number treated as hourly" },
-  deflate_one_2080: { id: "SAL-05", desc: "Suspiciously huge value — repaired ÷2080" },
-  deflate_double_2080: { id: "SAL-05", desc: "Double-inflated value — repaired ÷2080²" },
-  hourly_from_inflated: { id: "SAL-05", desc: "Hourly derived from inflated value" },
+  hourly_explicit: {
+    id: "SAL-01",
+    desc: "Salary text included hourly cues (/hr, per hour, hourly, ph). The numeric amount was multiplied by 2,080 work hours per year to get an annual USD figure.",
+  },
+  annual_explicit: {
+    id: "SAL-02",
+    desc: "Salary text included annual cues (/yr, year, annual, salary, pa). The number was taken as USD per year without multiplying by hourly rate.",
+  },
+  annual_plain: {
+    id: "SAL-03",
+    desc: "A bare number fell between $20k and $500k with no hourly/annual keywords, so it was treated as annual USD (already in the valid band).",
+  },
+  k_suffix: {
+    id: "SAL-03",
+    desc: "A compact form like 120k or 85.5k was parsed: the number × 1,000 as annual USD.",
+  },
+  hourly_heuristic: {
+    id: "SAL-04",
+    desc: "A number between 5 and 400 had no annual keywords; it was treated as an hourly dollar rate and × 2,080 to annualize.",
+  },
+  deflate_one_2080: {
+    id: "SAL-05",
+    desc: "The value looked like an annual figure that was mistakenly multiplied by 2,080 once. It was divided by 2,080 once to recover a plausible annual salary.",
+  },
+  deflate_double_2080: {
+    id: "SAL-05",
+    desc: "The value looked double-inflated (× 2,080 twice). It was repaired by dividing down and re-annualizing from an implied hourly rate.",
+  },
+  hourly_from_inflated: {
+    id: "SAL-05",
+    desc: "A huge number was reinterpreted as a mistaken hourly × 2,080 on an annual; divided by 2,080 and treated as hourly-derived annual.",
+  },
 };
 
-function trackSalary(norm, rawSalary, title, tracker) {
+function trackSalary(norm, rawSalary, listingTitleForAudit, tracker) {
   if (!tracker) return;
-  const before = { salary: rawSalary, title };
+  const before = { salary: rawSalary, listingTitle: listingTitleForAudit };
 
   if (!norm.ok) {
     const map = {
-      empty_salary: { id: "SAL-06", desc: "Unparseable salary" },
-      unparseable: { id: "SAL-06", desc: "Unparseable salary" },
-      invalid_number: { id: "SAL-06", desc: "Invalid number in salary" },
-      outlier_or_unclassified: { id: "SAL-06", desc: "Unrepairable huge value" },
-      trainee_sanity_cap: { id: "SAL-09", desc: "Trainee/intern salary cap exceeded" },
+      empty_salary: { id: "SAL-06", desc: "Salary field was empty or whitespace — cannot normalize; row is skipped." },
+      unparseable: { id: "SAL-06", desc: "No numeric salary could be extracted from the text — cannot normalize; row is skipped." },
+      invalid_number: { id: "SAL-06", desc: "A number was found but it was not finite or positive — row is skipped." },
+      outlier_or_unclassified: { id: "SAL-06", desc: "The value could not be classified as hourly or annual and was not repairable — row is skipped." },
+      trainee_sanity_cap: {
+        id: "SAL-09",
+        desc: "Listing title matches trainee/intern-style wording but annualized pay exceeded $200k — treated as bad data; row is skipped.",
+      },
     };
     let rule;
     if (norm.reason === "out_of_range") {
       rule = norm.detail < SALARY_MIN_ANNUAL
-        ? { id: "SAL-07", desc: "Result below $20,000" }
-        : { id: "SAL-08", desc: "Result above $500,000" };
+        ? { id: "SAL-07", desc: "After normalization the annual amount was below $20,000 (minimum policy) — row is skipped." }
+        : { id: "SAL-08", desc: "After normalization the annual amount was above $500,000 (maximum policy) — row is skipped." };
     } else {
       rule = map[norm.reason] || { id: "SAL-06", desc: norm.reason };
     }
@@ -104,11 +130,11 @@ function trackRemote(raw, isRemote, tracker) {
   const missing = Object.entries(loc).filter(([, v]) => !hasString(v));
 
   if (missing.length === 0) {
-    tracker.record("RMT-01", "remote_detection", "All 4 location fields present", {
+    tracker.record("RMT-01", "remote_detection", "Location Label, State, City, and Country are all non-empty — job is treated as not remote (office/hybrid with a known site).", {
       before: loc, after: { isRemote: false },
     });
   } else if (missing.length === 4) {
-    tracker.record("RMT-03", "remote_detection", "All 4 fields missing", {
+    tracker.record("RMT-03", "remote_detection", "All four location fields are empty — no physical site; job is flagged isRemote = true.", {
       before: loc, after: { isRemote: true },
     });
   } else {
@@ -116,11 +142,11 @@ function trackRemote(raw, isRemote, tracker) {
       (v) => v != null && String(v) !== "" && String(v).trim() === "",
     );
     if (hasWhitespaceOnly) {
-      tracker.record("RMT-04", "remote_detection", "Field present but only whitespace", {
+      tracker.record("RMT-04", "remote_detection", "At least one location field contained only spaces — treated like missing data; isRemote = true.", {
         before: loc, after: { isRemote: true },
       });
     } else {
-      tracker.record("RMT-02", "remote_detection", "Some location fields missing", {
+      tracker.record("RMT-02", "remote_detection", "One or more of the four location fields are missing (partial address) — insufficient for an on-site pin; isRemote = true.", {
         before: loc, after: { isRemote: true, missingFields: missing.map(([k]) => k) },
       });
     }
@@ -128,7 +154,7 @@ function trackRemote(raw, isRemote, tracker) {
 }
 
 // ─── Per-document transform pipeline ───────────────────────────────────────────
-// Order: Salary → Job Type → Role Detection → Title Norm → rest (enrichment-only)
+// Order: Salary → Job Type → Title Norm (listing first) → rest (enrichment-only)
 // Each rejection returns `rejectedAtPhase` so the sync function can build a
 // cascading funnel where one phase's "Records out" = next phase's "Records in".
 
@@ -141,8 +167,8 @@ function processRawDoc(raw, tracker) {
   const postDate = raw[JobField.postDate] || "";
 
   // 1. Salary Normalization (biggest rejection gate — run first)
-  const sal = normalizeSalaryForEtl(salary, originalTitle);
-  trackSalary(sal, salary, originalTitle, tracker);
+  const sal = normalizeSalaryForEtl(salary, listingTitle);
+  trackSalary(sal, salary, listingTitle, tracker);
   if (sal.ok) allRules.push(...(sal.flags || []).map((f) => SAL_FLAG_MAP[f]?.id).filter(Boolean));
   if (!sal.ok) {
     return { ok: false, reason: sal.reason, rulesApplied: allRules, rejectedAtPhase: "salary_normalization" };
@@ -154,7 +180,7 @@ function processRawDoc(raw, tracker) {
 
   // JTP-06: Internship type + suspiciously high salary → reject
   if (jtp.jobType === "internship" && sal.annual > 200_000) {
-    tracker?.record("JTP-06", "job_type_classification", "Internship job type triggers salary cap", {
+    tracker?.record("JTP-06", "job_type_classification", "Job type was classified as internship (keyword in title) but annual salary is over $200k — inconsistent; row is rejected.", {
       before: { jobType: jtp.jobType, annual: sal.annual },
       after: null, rejected: true,
     });
@@ -162,16 +188,25 @@ function processRawDoc(raw, tracker) {
     return { ok: false, reason: "trainee_sanity_cap", rulesApplied: allRules, rejectedAtPhase: "job_type_classification" };
   }
 
-  // 3. Role Detection (examines both cleaned titles, picks the best canonical role)
-  const rol = detectRole(jtp.cleanedFilterTitle, jtp.cleanedListingTitle, tracker);
-  allRules.push(...rol.rulesApplied);
-  if (!rol.ok) {
-    return { ok: false, reason: rol.reason, rulesApplied: allRules, rejectedAtPhase: "role_detection" };
+  // 3. Job title normalization — prefer listing title, then filter title (same field family as search/display)
+  let ttl;
+  let roleSource = null;
+  if (hasString(jtp.cleanedListingTitle)) {
+    ttl = normalizeJobTitle(jtp.cleanedListingTitle, tracker);
+    if (ttl.ok) roleSource = "listing_title";
   }
-
-  // 4. Title-level normalization audit (on whichever title was selected by role detection)
-  const chosenTitle = rol.roleSource === "listing_title" ? jtp.cleanedListingTitle : jtp.cleanedFilterTitle;
-  const ttl = normalizeJobTitle(chosenTitle, tracker);
+  if (!ttl?.ok && hasString(jtp.cleanedFilterTitle)) {
+    ttl = normalizeJobTitle(jtp.cleanedFilterTitle, tracker);
+    if (ttl.ok) roleSource = "filter_title";
+  }
+  if (!ttl?.ok) {
+    return {
+      ok: false,
+      reason: ttl?.reason || "empty_title",
+      rulesApplied: allRules,
+      rejectedAtPhase: "job_title_normalization",
+    };
+  }
   allRules.push(...ttl.rulesApplied);
 
   // 5. Remote Detection
@@ -211,8 +246,8 @@ function processRawDoc(raw, tracker) {
       sourceRawId: _id,
       isRemote,
       etlSalaryFlags: sal.flags || [],
-      normalizedTitle: rol.normalizedTitle,
-      roleSource: rol.roleSource,
+      normalizedTitle: ttl.normalizedTitle,
+      roleSource,
       jobType: jtp.jobType,
       postedAt: dte.postedAt,
       daysSincePosted: dte.daysSincePosted,
@@ -312,11 +347,11 @@ async function trackEligibility(tracker) {
 
   const neither = Math.max(0, total - eligible - salaryOnly - titleOnly);
 
-  tracker.recordBulk("ELG-01", "eligibility_filter", "Both Salary + Job Title present — process", { affected: eligible });
-  tracker.recordBulk("ELG-02", "eligibility_filter", "Salary missing — skip", { affected: titleOnly, rejected: titleOnly });
-  tracker.recordBulk("ELG-03", "eligibility_filter", "Job Title missing — skip", { affected: salaryOnly, rejected: salaryOnly });
-  tracker.recordBulk("ELG-04", "eligibility_filter", "Both missing — skip", { affected: neither, rejected: neither });
-  tracker.recordBulk("ELG-05", "eligibility_filter", "Listing Title missing — tracked (role detection may fall back to filter title)", { affected: listingTitleMissing });
+  tracker.recordBulk("ELG-01", "eligibility_filter", "Raw rows that have both a non-empty Salary and a non-empty Job Title (filter) — these are the only rows the sync pipeline attempts to clean and upsert.", { affected: eligible });
+  tracker.recordBulk("ELG-02", "eligibility_filter", "Rows with Job Title but no Salary — excluded from this sync (cannot normalize pay).", { affected: titleOnly, rejected: titleOnly });
+  tracker.recordBulk("ELG-03", "eligibility_filter", "Rows with Salary but no Job Title — excluded from this sync (required for type/title steps).", { affected: salaryOnly, rejected: salaryOnly });
+  tracker.recordBulk("ELG-04", "eligibility_filter", "Rows missing both Salary and Job Title — excluded from processing.", { affected: neither, rejected: neither });
+  tracker.recordBulk("ELG-05", "eligibility_filter", "Rows with no Listing Title — still eligible if salary + filter title exist; title normalization falls back to the filter title only.", { affected: listingTitleMissing });
 
   return { total, eligible };
 }
@@ -429,12 +464,11 @@ export async function syncEligibleRawToCleaned() {
   const transformTime = Date.now() - transformStart;
 
   // Build cascading funnel: each phase's "Records out" = next phase's "Records in".
-  // Phases that can reject: salary_normalization, job_type_classification, role_detection.
+  // Phases that can reject: salary_normalization, job_type_classification, job_title_normalization.
   // All others are enrichment-only (no rejections, in == out).
   const cascadePhases = [
     "salary_normalization",
     "job_type_classification",
-    "role_detection",
     "job_title_normalization",
     "remote_detection",
     "date_freshness",

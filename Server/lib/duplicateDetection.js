@@ -62,15 +62,15 @@ export function detectDuplicates(docs, tracker) {
 
   if (tracker) {
     if (dupCount > 0) {
-      tracker.recordBulk("DUP-01", "duplicate_detection", "Exact hash match found — flagged as duplicate", {
+      tracker.recordBulk("DUP-01", "duplicate_detection", "Duplicate group: same MD5 hash (title + company + city + state + country + jobType) as another row — older copies flagged isDuplicate=true.", {
         affected: dupCount,
       });
-      tracker.recordBulk("DUP-02", "duplicate_detection", "Keep most recent among dupes", {
+      tracker.recordBulk("DUP-02", "duplicate_detection", "Within each duplicate group the newest postedAt is kept as canonical; other rows in the group are marked duplicates.", {
         affected: groups.size - uniqueCount,
       });
     }
     if (uniqueCount > 0) {
-      tracker.recordBulk("DUP-03", "duplicate_detection", "Not a duplicate — unique posting", {
+      tracker.recordBulk("DUP-03", "duplicate_detection", "Unique hash — no other cleaned job shared this fingerprint in the batch; isDuplicate=false.", {
         affected: uniqueCount,
       });
     }
