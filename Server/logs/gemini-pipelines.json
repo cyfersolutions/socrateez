@@ -1,0 +1,138 @@
+{
+    "ts": "2026-03-31T12:29:17.360Z",
+    "userText": "What is the average salary for software engineers?",
+    "reasoning": "The user wants the average salary for a specific job title. This requires filtering job listings, converting the salary string to a number, and then calculating the average.",
+    "operation": "aggregate",
+    "collection": "cleaned_job_data",
+    "prepend_salary_numeric": true,
+    "plannedPipeline": [
+        {
+            "$match": {
+                "$or": [
+                    {
+                        "Listing Title": {
+                            "$regex": "software engineer",
+                            "$options": "i"
+                        }
+                    },
+                    {
+                        "Job Title (filter selection)": {
+                            "$regex": "software engineer",
+                            "$options": "i"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "$group": {
+                "_id": null,
+                "averageSalary": {
+                    "$avg": "$salaryNum"
+                }
+            }
+        }
+    ],
+    "executedPipeline": [
+        {
+            "$addFields": {
+                "salaryNum": {
+                    "$convert": {
+                        "input": {
+                            "$replaceAll": {
+                                "input": {
+                                    "$replaceAll": {
+                                        "input": {
+                                            "$ifNull": [
+                                                "$Salary",
+                                                ""
+                                            ]
+                                        },
+                                        "find": {
+                                            "$literal": "$"
+                                        },
+                                        "replacement": {
+                                            "$literal": ""
+                                        }
+                                    }
+                                },
+                                "find": {
+                                    "$literal": ","
+                                },
+                                "replacement": {
+                                    "$literal": ""
+                                }
+                            }
+                        },
+                        "to": "double",
+                        "onError": null,
+                        "onNull": null
+                    }
+                },
+                "postDateParsed": {
+                    "$cond": {
+                        "if": {
+                            "$eq": [
+                                {
+                                    "$type": "$Post Date"
+                                },
+                                "date"
+                            ]
+                        },
+                        "then": "$Post Date",
+                        "else": {
+                            "$dateFromString": {
+                                "dateString": {
+                                    "$toString": {
+                                        "$ifNull": [
+                                            "$Post Date",
+                                            ""
+                                        ]
+                                    }
+                                },
+                                "format": "%m/%d/%Y",
+                                "onError": null,
+                                "onNull": null
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "$match": {
+                "salaryNum": {
+                    "$gt": 0
+                }
+            }
+        },
+        {
+            "$match": {
+                "$or": [
+                    {
+                        "Listing Title": {
+                            "$regex": "software engineer",
+                            "$options": "i"
+                        }
+                    },
+                    {
+                        "Job Title (filter selection)": {
+                            "$regex": "software engineer",
+                            "$options": "i"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "$group": {
+                "_id": null,
+                "averageSalary": {
+                    "$avg": "$salaryNum"
+                }
+            }
+        }
+    ],
+    "executionKind": "aggregate",
+    "executionRowCount": 1
+}

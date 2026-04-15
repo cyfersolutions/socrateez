@@ -1,0 +1,729 @@
+{
+    "ts": "2026-03-31T12:46:32.729Z",
+    "stages": [
+        [
+            {
+                "$match": {
+                    "$or": [
+                        {
+                            "Listing Title": {}
+                        },
+                        {
+                            "Job Title (filter selection)": {}
+                        },
+                        {
+                            "Company": {}
+                        }
+                    ]
+                }
+            },
+            {
+                "$addFields": {
+                    "salaryNum": {
+                        "$convert": {
+                            "input": {
+                                "$replaceAll": {
+                                    "input": {
+                                        "$replaceAll": {
+                                            "input": {
+                                                "$ifNull": [
+                                                    "$Salary",
+                                                    ""
+                                                ]
+                                            },
+                                            "find": {
+                                                "$literal": "$"
+                                            },
+                                            "replacement": {
+                                                "$literal": ""
+                                            }
+                                        }
+                                    },
+                                    "find": {
+                                        "$literal": ","
+                                    },
+                                    "replacement": {
+                                        "$literal": ""
+                                    }
+                                }
+                            },
+                            "to": "double",
+                            "onError": null,
+                            "onNull": null
+                        }
+                    },
+                    "title": {
+                        "$ifNull": [
+                            "$Listing Title",
+                            "$Job Title (filter selection)"
+                        ]
+                    },
+                    "company": "$Company",
+                    "city": "$City",
+                    "state": "$State",
+                    "location": {
+                        "$ifNull": [
+                            "$Location Label",
+                            {
+                                "$trim": {
+                                    "input": {
+                                        "$concat": [
+                                            {
+                                                "$ifNull": [
+                                                    "$City",
+                                                    ""
+                                                ]
+                                            },
+                                            ", ",
+                                            {
+                                                "$ifNull": [
+                                                    "$State",
+                                                    ""
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "postedDate": {
+                        "$toString": {
+                            "$ifNull": [
+                                "$Post Date",
+                                ""
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$match": {
+                    "salaryNum": {
+                        "$gt": 0
+                    }
+                }
+            }
+        ]
+    ],
+    "keyword": "software engineer",
+    "location": "",
+    "cities": [],
+    "companies": [],
+    "minSalary": null,
+    "maxSalary": null,
+    "sortField": "postedDate",
+    "sortDirection": -1,
+    "limit": 5000
+}
+{
+    "ts": "2026-03-31T12:46:51.708Z",
+    "stages": [
+        [
+            {
+                "$match": {
+                    "$or": [
+                        {
+                            "Listing Title": {}
+                        },
+                        {
+                            "Job Title (filter selection)": {}
+                        },
+                        {
+                            "Company": {}
+                        }
+                    ]
+                }
+            },
+            {
+                "$addFields": {
+                    "salaryNum": {
+                        "$convert": {
+                            "input": {
+                                "$replaceAll": {
+                                    "input": {
+                                        "$replaceAll": {
+                                            "input": {
+                                                "$ifNull": [
+                                                    "$Salary",
+                                                    ""
+                                                ]
+                                            },
+                                            "find": {
+                                                "$literal": "$"
+                                            },
+                                            "replacement": {
+                                                "$literal": ""
+                                            }
+                                        }
+                                    },
+                                    "find": {
+                                        "$literal": ","
+                                    },
+                                    "replacement": {
+                                        "$literal": ""
+                                    }
+                                }
+                            },
+                            "to": "double",
+                            "onError": null,
+                            "onNull": null
+                        }
+                    },
+                    "title": {
+                        "$ifNull": [
+                            "$Listing Title",
+                            "$Job Title (filter selection)"
+                        ]
+                    },
+                    "company": "$Company",
+                    "city": "$City",
+                    "state": "$State",
+                    "location": {
+                        "$ifNull": [
+                            "$Location Label",
+                            {
+                                "$trim": {
+                                    "input": {
+                                        "$concat": [
+                                            {
+                                                "$ifNull": [
+                                                    "$City",
+                                                    ""
+                                                ]
+                                            },
+                                            ", ",
+                                            {
+                                                "$ifNull": [
+                                                    "$State",
+                                                    ""
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "postedDate": {
+                        "$toString": {
+                            "$ifNull": [
+                                "$Post Date",
+                                ""
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$match": {
+                    "salaryNum": {
+                        "$gte": 40000,
+                        "$lte": 200000
+                    }
+                }
+            }
+        ]
+    ],
+    "keyword": "software engineer",
+    "location": "",
+    "cities": [],
+    "companies": [],
+    "minSalary": 40000,
+    "maxSalary": 200000,
+    "sortField": "postedDate",
+    "sortDirection": -1,
+    "limit": 5000
+}
+{
+    "ts": "2026-03-31T12:46:51.713Z",
+    "stages": [
+        [
+            {
+                "$match": {
+                    "$or": [
+                        {
+                            "Listing Title": {}
+                        },
+                        {
+                            "Job Title (filter selection)": {}
+                        },
+                        {
+                            "Company": {}
+                        }
+                    ]
+                }
+            },
+            {
+                "$addFields": {
+                    "salaryNum": {
+                        "$convert": {
+                            "input": {
+                                "$replaceAll": {
+                                    "input": {
+                                        "$replaceAll": {
+                                            "input": {
+                                                "$ifNull": [
+                                                    "$Salary",
+                                                    ""
+                                                ]
+                                            },
+                                            "find": {
+                                                "$literal": "$"
+                                            },
+                                            "replacement": {
+                                                "$literal": ""
+                                            }
+                                        }
+                                    },
+                                    "find": {
+                                        "$literal": ","
+                                    },
+                                    "replacement": {
+                                        "$literal": ""
+                                    }
+                                }
+                            },
+                            "to": "double",
+                            "onError": null,
+                            "onNull": null
+                        }
+                    },
+                    "title": {
+                        "$ifNull": [
+                            "$Listing Title",
+                            "$Job Title (filter selection)"
+                        ]
+                    },
+                    "company": "$Company",
+                    "city": "$City",
+                    "state": "$State",
+                    "location": {
+                        "$ifNull": [
+                            "$Location Label",
+                            {
+                                "$trim": {
+                                    "input": {
+                                        "$concat": [
+                                            {
+                                                "$ifNull": [
+                                                    "$City",
+                                                    ""
+                                                ]
+                                            },
+                                            ", ",
+                                            {
+                                                "$ifNull": [
+                                                    "$State",
+                                                    ""
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "postedDate": {
+                        "$toString": {
+                            "$ifNull": [
+                                "$Post Date",
+                                ""
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$match": {
+                    "salaryNum": {
+                        "$gt": 0
+                    }
+                }
+            }
+        ]
+    ],
+    "keyword": "software engineer",
+    "location": "",
+    "cities": [],
+    "companies": [],
+    "minSalary": null,
+    "maxSalary": null,
+    "sortField": "postedDate",
+    "sortDirection": -1,
+    "limit": 5000
+}
+{
+    "ts": "2026-03-31T12:50:05.045Z",
+    "stages": [
+        [
+            {
+                "$match": {
+                    "$or": [
+                        {
+                            "Listing Title": {}
+                        },
+                        {
+                            "Job Title (filter selection)": {}
+                        },
+                        {
+                            "Company": {}
+                        }
+                    ]
+                }
+            },
+            {
+                "$addFields": {
+                    "salaryNum": {
+                        "$convert": {
+                            "input": {
+                                "$replaceAll": {
+                                    "input": {
+                                        "$replaceAll": {
+                                            "input": {
+                                                "$ifNull": [
+                                                    "$Salary",
+                                                    ""
+                                                ]
+                                            },
+                                            "find": {
+                                                "$literal": "$"
+                                            },
+                                            "replacement": {
+                                                "$literal": ""
+                                            }
+                                        }
+                                    },
+                                    "find": {
+                                        "$literal": ","
+                                    },
+                                    "replacement": {
+                                        "$literal": ""
+                                    }
+                                }
+                            },
+                            "to": "double",
+                            "onError": null,
+                            "onNull": null
+                        }
+                    },
+                    "title": {
+                        "$ifNull": [
+                            "$Listing Title",
+                            "$Job Title (filter selection)"
+                        ]
+                    },
+                    "company": "$Company",
+                    "city": "$City",
+                    "state": "$State",
+                    "location": {
+                        "$ifNull": [
+                            "$Location Label",
+                            {
+                                "$trim": {
+                                    "input": {
+                                        "$concat": [
+                                            {
+                                                "$ifNull": [
+                                                    "$City",
+                                                    ""
+                                                ]
+                                            },
+                                            ", ",
+                                            {
+                                                "$ifNull": [
+                                                    "$State",
+                                                    ""
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "postedDate": {
+                        "$toString": {
+                            "$ifNull": [
+                                "$Post Date",
+                                ""
+                            ]
+                        }
+                    }
+                }
+            }
+        ]
+    ],
+    "keyword": "software engineer",
+    "location": "",
+    "cities": [],
+    "companies": [],
+    "minSalary": null,
+    "maxSalary": null,
+    "sortField": "postedDate",
+    "sortDirection": -1,
+    "limit": 5000
+}
+{
+    "ts": "2026-03-31T12:50:21.544Z",
+    "stages": [
+        [
+            {
+                "$match": {
+                    "$or": [
+                        {
+                            "Listing Title": {}
+                        },
+                        {
+                            "Job Title (filter selection)": {}
+                        },
+                        {
+                            "Company": {}
+                        }
+                    ]
+                }
+            },
+            {
+                "$addFields": {
+                    "salaryNum": {
+                        "$convert": {
+                            "input": {
+                                "$replaceAll": {
+                                    "input": {
+                                        "$replaceAll": {
+                                            "input": {
+                                                "$ifNull": [
+                                                    "$Salary",
+                                                    ""
+                                                ]
+                                            },
+                                            "find": {
+                                                "$literal": "$"
+                                            },
+                                            "replacement": {
+                                                "$literal": ""
+                                            }
+                                        }
+                                    },
+                                    "find": {
+                                        "$literal": ","
+                                    },
+                                    "replacement": {
+                                        "$literal": ""
+                                    }
+                                }
+                            },
+                            "to": "double",
+                            "onError": null,
+                            "onNull": null
+                        }
+                    },
+                    "title": {
+                        "$ifNull": [
+                            "$Listing Title",
+                            "$Job Title (filter selection)"
+                        ]
+                    },
+                    "company": "$Company",
+                    "city": "$City",
+                    "state": "$State",
+                    "location": {
+                        "$ifNull": [
+                            "$Location Label",
+                            {
+                                "$trim": {
+                                    "input": {
+                                        "$concat": [
+                                            {
+                                                "$ifNull": [
+                                                    "$City",
+                                                    ""
+                                                ]
+                                            },
+                                            ", ",
+                                            {
+                                                "$ifNull": [
+                                                    "$State",
+                                                    ""
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "postedDate": {
+                        "$toString": {
+                            "$ifNull": [
+                                "$Post Date",
+                                ""
+                            ]
+                        }
+                    }
+                }
+            }
+        ]
+    ],
+    "keyword": "software engineer",
+    "location": "",
+    "cities": [],
+    "companies": [],
+    "minSalary": 40000,
+    "maxSalary": 200000,
+    "sortField": "postedDate",
+    "sortDirection": -1,
+    "limit": 5000
+}
+{
+    "ts": "2026-03-31T12:50:21.553Z",
+    "stages": [
+        [
+            {
+                "$match": {
+                    "$or": [
+                        {
+                            "Listing Title": {}
+                        },
+                        {
+                            "Job Title (filter selection)": {}
+                        },
+                        {
+                            "Company": {}
+                        }
+                    ]
+                }
+            },
+            {
+                "$addFields": {
+                    "salaryNum": {
+                        "$convert": {
+                            "input": {
+                                "$replaceAll": {
+                                    "input": {
+                                        "$replaceAll": {
+                                            "input": {
+                                                "$ifNull": [
+                                                    "$Salary",
+                                                    ""
+                                                ]
+                                            },
+                                            "find": {
+                                                "$literal": "$"
+                                            },
+                                            "replacement": {
+                                                "$literal": ""
+                                            }
+                                        }
+                                    },
+                                    "find": {
+                                        "$literal": ","
+                                    },
+                                    "replacement": {
+                                        "$literal": ""
+                                    }
+                                }
+                            },
+                            "to": "double",
+                            "onError": null,
+                            "onNull": null
+                        }
+                    },
+                    "title": {
+                        "$ifNull": [
+                            "$Listing Title",
+                            "$Job Title (filter selection)"
+                        ]
+                    },
+                    "company": "$Company",
+                    "city": "$City",
+                    "state": "$State",
+                    "location": {
+                        "$ifNull": [
+                            "$Location Label",
+                            {
+                                "$trim": {
+                                    "input": {
+                                        "$concat": [
+                                            {
+                                                "$ifNull": [
+                                                    "$City",
+                                                    ""
+                                                ]
+                                            },
+                                            ", ",
+                                            {
+                                                "$ifNull": [
+                                                    "$State",
+                                                    ""
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "postedDate": {
+                        "$toString": {
+                            "$ifNull": [
+                                "$Post Date",
+                                ""
+                            ]
+                        }
+                    }
+                }
+            }
+        ]
+    ],
+    "keyword": "software engineer",
+    "location": "",
+    "cities": [],
+    "companies": [],
+    "minSalary": null,
+    "maxSalary": null,
+    "sortField": "postedDate",
+    "sortDirection": -1,
+    "limit": 5000
+}{"ts":"2026-03-31T12:52:31.509Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T12:52:44.171Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T12:54:13.355Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T12:55:49.215Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T12:56:02.517Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":10000}
+{"ts":"2026-03-31T12:56:19.406Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":10000}
+{"ts":"2026-03-31T12:56:23.819Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":10000}
+{"ts":"2026-03-31T12:56:26.150Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":10000}
+{"ts":"2026-03-31T12:56:45.176Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":10000}
+{"ts":"2026-03-31T12:56:59.959Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":10000}
+{"ts":"2026-03-31T12:57:14.594Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T12:57:27.984Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T12:57:30.203Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T12:58:26.821Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T12:58:44.331Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T12:59:08.694Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T12:59:33.724Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":40000,"maxSalary":200000,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T12:59:33.737Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:03:26.968Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:03:47.018Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:05:47.607Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:05:47.629Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":40000,"maxSalary":200000,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:05:50.391Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"software engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:25:18.141Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Chief Editor","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:25:20.902Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Chief Editor","location":"","cities":[],"companies":[],"minSalary":40000,"maxSalary":200000,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:25:20.961Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Chief Editor","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:31:38.370Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"District Engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:31:42.271Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"District Engineer","location":"","cities":[],"companies":[],"minSalary":40000,"maxSalary":200000,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:31:42.274Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"District Engineer","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:43:22.180Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Concierge","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:43:27.215Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Concierge","location":"","cities":[],"companies":[],"minSalary":40000,"maxSalary":200000,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:43:27.225Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Concierge","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:43:43.740Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Concierge","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:43:47.289Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Concierge","location":"","cities":[],"companies":[],"minSalary":40000,"maxSalary":200000,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:43:47.310Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Concierge","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T13:45:09.154Z","stages":[[{"$match":{}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"","location":"","cities":[],"companies":[],"minSalary":40000,"maxSalary":200000,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T14:10:27.403Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Concierge","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T14:10:31.416Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Concierge","location":"","cities":[],"companies":[],"minSalary":40000,"maxSalary":200000,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T14:10:31.423Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Concierge","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T14:12:40.234Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Concierge","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T14:12:44.479Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Concierge","location":"","cities":[],"companies":[],"minSalary":40000,"maxSalary":200000,"sortField":"postedDate","sortDirection":-1,"limit":5000}
+{"ts":"2026-03-31T14:12:44.486Z","stages":[[{"$match":{"$or":[{"Listing Title":{}},{"Job Title (filter selection)":{}},{"Company":{}}]}},{"$addFields":{"salaryNum":{"$convert":{"input":{"$replaceAll":{"input":{"$replaceAll":{"input":{"$ifNull":["$Salary",""]},"find":{"$literal":"$"},"replacement":{"$literal":""}}},"find":{"$literal":","},"replacement":{"$literal":""}}},"to":"double","onError":null,"onNull":null}},"title":{"$ifNull":["$Listing Title","$Job Title (filter selection)"]},"company":"$Company","city":"$City","state":"$State","location":{"$ifNull":["$Location Label",{"$trim":{"input":{"$concat":[{"$ifNull":["$City",""]},", ",{"$ifNull":["$State",""]}]}}}]},"postedDate":{"$toString":{"$ifNull":["$Post Date",""]}}}}]],"keyword":"Concierge","location":"","cities":[],"companies":[],"minSalary":null,"maxSalary":null,"sortField":"postedDate","sortDirection":-1,"limit":5000}
