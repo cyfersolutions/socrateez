@@ -2,6 +2,9 @@ import { RawJobData } from "../models/RawJobData.js";
 import { CleanedJobData } from "../models/CleanedJobData.js";
 import { EtlAuditLog } from "../models/EtlAuditLog.js";
 import { JobField } from "../models/jobDataFields.js";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { normalizeSalaryForEtl, SALARY_MIN_ANNUAL } from "../lib/salaryNormalization.js";
 import { classifyJobType } from "../lib/jobTypeClassification.js";
 import { normalizeJobTitle } from "../lib/jobTitleNormalization.js";
@@ -9,19 +12,24 @@ import { normalizeDate } from "../lib/dateNormalization.js";
 import { normalizeLocation } from "../lib/locationNormalization.js";
 import { normalizeCompany } from "../lib/companyNormalization.js";
 import { extractSkills } from "../lib/skillsExtraction.js";
-import { detectDuplicates } from "../lib/duplicateDetection.js";
+import { computeDuplicateHash } from "../lib/duplicateDetection.js";
 import { EtlRuleTracker } from "../lib/etlRuleTracker.js";
 
 const FETCH_BATCH =
   Math.min(Math.max(Number(process.env.ETL_FETCH_BATCH) || 1500, 100), 10000);
 const BULK_CHUNK =
   Math.min(Math.max(Number(process.env.ETL_BULK_CHUNK) || 250, 50), 1000);
+const DUP_RULE_SAMPLE_LIMIT = 100;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DUP_RULE_SAMPLE_DIR = path.join(__dirname, "../debug/duplicate-rule-samples");
 
 const presentString = { $exists: true, $nin: [null, ""] };
 
 function hasString(v) {
   return v != null && String(v).trim() !== "";
 }
+
 
 // ─── Eligibility filter ────────────────────────────────────────────────────────
 
@@ -359,37 +367,116 @@ async function trackEligibility(tracker) {
 // ─── Duplicate-detection pass ──────────────────────────────────────────────────
 
 async function runDuplicateDetection(tracker) {
-  const start = Date.now();
-
-  const cleaned = await CleanedJobData.find({}, {
-    sourceRawId: 1,
-    normalizedTitle: 1,
-    canonicalCompany: 1,
-    normalizedCity: 1,
-    normalizedState: 1,
-    normalizedCountry: 1,
-    jobType: 1,
-    postedAt: 1,
-  }).lean();
-
-  const totalBefore = cleaned.length;
+  const totalBefore = await CleanedJobData.countDocuments();
   tracker.startPhase("duplicate_detection", totalBefore);
+  const dupRuleSamples = { "DUP-01": [], "DUP-02": [], "DUP-03": [] };
 
-  const dupMap = detectDuplicates(cleaned, tracker);
+  // Stream documents to avoid loading the whole cleaned collection in memory.
+  const groups = new Map();
+  const cursor = CleanedJobData.find({}).lean().cursor();
 
-  const ops = [];
+  for await (const doc of cursor) {
+    const rawIdStr = (doc.sourceRawId ?? doc._id)?.toString();
+    if (!rawIdStr) continue;
+
+    const hash = computeDuplicateHash(doc);
+    const postedTs = doc.postedAt ? new Date(doc.postedAt).getTime() : 0;
+
+    if (!groups.has(hash)) {
+      groups.set(hash, [{ id: rawIdStr, ts: postedTs }]);
+    } else {
+      groups.get(hash).push({ id: rawIdStr, ts: postedTs });
+    }
+  }
+
   let dupCount = 0;
-  for (const [rawIdStr, { isDuplicate, duplicateHash }] of dupMap) {
+  let uniqueCount = 0;
+  let duplicateGroups = 0;
+  const ops = [];
+
+  for (const [hash, rows] of groups) {
+    if (rows.length === 1) {
+      uniqueCount++;
+      if (dupRuleSamples["DUP-03"].length < DUP_RULE_SAMPLE_LIMIT) {
+        dupRuleSamples["DUP-03"].push({
+          sourceRawId: rows[0].id,
+          duplicateHash: hash,
+          postedAtTs: rows[0].ts || null,
+          isDuplicate: false,
+        });
+      }
+      ops.push({
+        updateOne: {
+          filter: { sourceRawId: rows[0].id },
+          update: { $set: { isDuplicate: false, duplicateHash: hash } },
+        },
+      });
+      continue;
+    }
+
+    duplicateGroups++;
+    rows.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    if (dupRuleSamples["DUP-02"].length < DUP_RULE_SAMPLE_LIMIT) {
+      dupRuleSamples["DUP-02"].push({
+        duplicateHash: hash,
+        keptSourceRawId: rows[0].id,
+        keptPostedAtTs: rows[0].ts || null,
+        droppedCount: rows.length - 1,
+      });
+    }
+
     ops.push({
       updateOne: {
-        filter: { sourceRawId: rawIdStr },
-        update: { $set: { isDuplicate, duplicateHash } },
+        filter: { sourceRawId: rows[0].id },
+        update: { $set: { isDuplicate: false, duplicateHash: hash } },
       },
     });
-    if (isDuplicate) dupCount++;
+
+    for (let i = 1; i < rows.length; i++) {
+      if (dupRuleSamples["DUP-01"].length < DUP_RULE_SAMPLE_LIMIT) {
+        dupRuleSamples["DUP-01"].push({
+          sourceRawId: rows[i].id,
+          duplicateHash: hash,
+          postedAtTs: rows[i].ts || null,
+          isDuplicate: true,
+          keptSourceRawId: rows[0].id,
+        });
+      }
+      ops.push({
+        updateOne: {
+          filter: { sourceRawId: rows[i].id },
+          update: { $set: { isDuplicate: true, duplicateHash: hash } },
+        },
+      });
+      dupCount++;
+    }
+  }
+
+  if (dupCount > 0) {
+    tracker.recordBulk(
+      "DUP-01",
+      "duplicate_detection",
+      "Duplicate group: same normalized full-row fingerprint hash (with posting date normalized first) as another cleaned row — older copies flagged isDuplicate=true.",
+      { affected: dupCount },
+    );
+    tracker.recordBulk(
+      "DUP-02",
+      "duplicate_detection",
+      "Within each duplicate fingerprint group, the newest postedAt is kept as canonical; all older rows in that group are marked duplicates.",
+      { affected: duplicateGroups },
+    );
+  }
+  if (uniqueCount > 0) {
+    tracker.recordBulk(
+      "DUP-03",
+      "duplicate_detection",
+      "Unique hash — no other cleaned job shared this fingerprint in the batch; isDuplicate=false.",
+      { affected: uniqueCount },
+    );
   }
 
   if (ops.length > 0) await flushBulkWrite(ops);
+  await writeDuplicateRuleSamples(dupRuleSamples);
 
   tracker.endPhase("duplicate_detection", totalBefore - dupCount);
   return { totalBefore, duplicatesFound: dupCount };
@@ -550,4 +637,22 @@ function emptyResult(totalRaw, syncRunId, syncStart) {
     etlBulkChunk: BULK_CHUNK,
     totalTimeTakenMs: Date.now() - syncStart,
   };
+}
+
+async function writeDuplicateRuleSamples(dupRuleSamples) {
+  await mkdir(DUP_RULE_SAMPLE_DIR, { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const fileWrites = Object.entries(dupRuleSamples).map(([ruleId, examples]) => {
+    const filename = `${timestamp}-${ruleId}.json`;
+    const filePath = path.join(DUP_RULE_SAMPLE_DIR, filename);
+    const payload = {
+      ruleId,
+      sampleLimit: DUP_RULE_SAMPLE_LIMIT,
+      sampleCount: examples.length,
+      generatedAt: new Date().toISOString(),
+      examples,
+    };
+    return writeFile(filePath, JSON.stringify(payload, null, 2), "utf8");
+  });
+  await Promise.all(fileWrites);
 }

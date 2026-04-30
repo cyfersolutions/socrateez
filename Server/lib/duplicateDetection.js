@@ -2,20 +2,63 @@ import crypto from "crypto";
 
 /**
  * Compute a deterministic hash for duplicate grouping.
- * Key = normalizedTitle + canonicalCompany + normalizedLocation + jobType.
+ * Key = normalized, stable fingerprint of the cleaned row.
+ * We intentionally include most business fields (not just a handful),
+ * and normalize posting date first so equivalent rows hash the same.
  */
 export function computeDuplicateHash(doc) {
-  const parts = [
-    (doc.normalizedTitle || ""),
-    (doc.canonicalCompany || ""),
-    (doc.normalizedCity || ""),
-    (doc.normalizedState || ""),
-    (doc.normalizedCountry || ""),
-    (doc.jobType || ""),
-  ]
-    .map((s) => s.toLowerCase())
-    .join("|");
-  return crypto.createHash("md5").update(parts).digest("hex");
+  const canonical = buildCanonicalRowFingerprint(doc);
+  return crypto.createHash("md5").update(canonical).digest("hex");
+}
+
+function normalizePostedDateKey(doc) {
+  const postedAt = doc?.postedAt;
+  if (postedAt) {
+    const d = new Date(postedAt);
+    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  }
+  const raw = doc?.["Post Date"];
+  return raw == null ? "" : String(raw).trim().toLowerCase();
+}
+
+function normalizeValue(v) {
+  if (v == null) return null;
+  if (Array.isArray(v)) return v.map(normalizeValue);
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString().slice(0, 10);
+  if (typeof v === "object") {
+    const out = {};
+    for (const k of Object.keys(v).sort()) {
+      out[k] = normalizeValue(v[k]);
+    }
+    return out;
+  }
+  if (typeof v === "string") return v.trim().toLowerCase();
+  return v;
+}
+
+function buildCanonicalRowFingerprint(doc) {
+  const excluded = new Set([
+    "_id",
+    "__v",
+    "sourceRawId",
+    "isDuplicate",
+    "duplicateHash",
+    "etlRulesApplied",
+    "createdAt",
+    "updatedAt",
+  ]);
+
+  const payload = {};
+  for (const key of Object.keys(doc || {}).sort()) {
+    if (excluded.has(key)) continue;
+    if (key === "postedAt" || key === "Post Date") continue;
+    payload[key] = normalizeValue(doc[key]);
+  }
+
+  // Date normalization step requested: force one comparable date key.
+  payload.postedDateNormalized = normalizePostedDateKey(doc);
+
+  return JSON.stringify(payload);
 }
 
 /**
@@ -62,10 +105,10 @@ export function detectDuplicates(docs, tracker) {
 
   if (tracker) {
     if (dupCount > 0) {
-      tracker.recordBulk("DUP-01", "duplicate_detection", "Duplicate group: same MD5 hash (title + company + city + state + country + jobType) as another row — older copies flagged isDuplicate=true.", {
+      tracker.recordBulk("DUP-01", "duplicate_detection", "Duplicate group: same normalized full-row fingerprint hash (with posting date normalized first) as another cleaned row — older copies flagged isDuplicate=true.", {
         affected: dupCount,
       });
-      tracker.recordBulk("DUP-02", "duplicate_detection", "Within each duplicate group the newest postedAt is kept as canonical; other rows in the group are marked duplicates.", {
+      tracker.recordBulk("DUP-02", "duplicate_detection", "Within each duplicate fingerprint group, the newest postedAt is kept as canonical; all older rows in that group are marked duplicates.", {
         affected: groups.size - uniqueCount,
       });
     }

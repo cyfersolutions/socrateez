@@ -103,7 +103,7 @@ const CATEGORY_META: Record<
   duplicate_detection: {
     label: 'Duplicate Removal',
     description:
-      'After all rows are written, groups jobs by an MD5 of normalized title, company, location, and job type. Keeps the newest posting per group and marks older rows as duplicates.',
+      'After all rows are written, computes an MD5 from a normalized full-row fingerprint (including a normalized posting date). Rows with the same fingerprint are grouped; the newest postedAt is kept and older rows are marked duplicates.',
     icon: XCircle,
     color: 'text-red-600 bg-red-500/10',
   },
@@ -120,13 +120,6 @@ function getCategoryMeta(cat: string) {
   );
 }
 
-function fmtTime(ms: number | null): string {
-  if (ms == null) return '—';
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
-  return `${(ms / 60000).toFixed(1)}m`;
-}
-
 function fmtDate(iso: string): string {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -138,6 +131,11 @@ function fmtDate(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function fmtPct(numerator: number, denominator: number): string {
+  if (!denominator || denominator <= 0) return '0.00%';
+  return `${((numerator / denominator) * 100).toFixed(2)}%`;
 }
 
 function Skeleton({ className = '' }: { className?: string }) {
@@ -309,18 +307,14 @@ function RunDetailView({
   detail: EtlAuditRunDetail;
   onBack: () => void;
 }) {
-  const totalAffected = detail.phases.reduce(
-    (sum, p) => sum + p.subRules.reduce((s, r) => s + r.affectedCount, 0),
-    0
-  );
   const totalRejected = detail.phases.reduce(
     (sum, p) => sum + p.subRules.reduce((s, r) => s + r.rejectedCount, 0),
     0
   );
-  const totalTime = detail.phases.reduce(
-    (sum, p) => sum + (p.phaseTimeTakenMs ?? 0),
-    0
-  );
+  const recordsProcessed = detail.phases[0].countBeforePhase ?? 0;
+  const recordsCleaned = Math.max(0, recordsProcessed - totalRejected);
+  const overallRejectionPct = fmtPct(totalRejected, recordsProcessed);
+  const overallCleanedPct = fmtPct(recordsCleaned, recordsProcessed);
 
   return (
     <div className="space-y-6">
@@ -345,7 +339,7 @@ function RunDetailView({
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <MiniStat
           label="Steps Performed"
           value={String(detail.phases.length)}
@@ -354,21 +348,27 @@ function RunDetailView({
         />
         <MiniStat
           label="Records Processed"
-          value={formatNumber(detail.phases[0].countBeforePhase)}
+          value={formatNumber(recordsProcessed)}
           icon={<Database className="h-4 w-4 text-emerald-600" />}
           bg="bg-emerald-500/10"
         />
         <MiniStat
           label="Records Rejected"
-          value={formatNumber(totalRejected)}
+          value={`${formatNumber(totalRejected)} (${overallRejectionPct})`}
           icon={<XCircle className="h-4 w-4 text-red-600" />}
           bg="bg-red-500/10"
         />
         <MiniStat
           label="Records Cleaned"
-          value={formatNumber((detail.phases[0].countBeforePhase ?? 0) - totalRejected)}
+          value={`${formatNumber(recordsCleaned)} (${overallCleanedPct})`}
           icon={<CheckCircle2 className="h-4 w-4 text-green-600" />}
           bg="bg-amber-500/10"
+        />
+        <MiniStat
+          label="Overall Rejection Rate"
+          value={overallRejectionPct}
+          icon={<XCircle className="h-4 w-4 text-rose-700" />}
+          bg="bg-rose-500/10"
         />
       </div>
 
@@ -398,8 +398,12 @@ function PhaseCard({ phase, stepNumber }: { phase: EtlAuditPhase; stepNumber: nu
   const [expanded, setExpanded] = useState(false);
   const meta = getCategoryMeta(phase.category);
   const Icon = meta.icon;
-  const totalAffected = phase.subRules.reduce((s, r) => s + r.affectedCount, 0);
   const totalRejected = phase.subRules.reduce((s, r) => s + r.rejectedCount, 0);
+  const inCount = Math.max(0, phase.countBeforePhase ?? 0);
+  const outCount = Math.max(0, phase.countAfterPhase ?? 0);
+  const phaseRejectedFromFlow = Math.max(0, inCount - outCount);
+  const phaseRejectedPct = fmtPct(phaseRejectedFromFlow, inCount);
+  const phasePassPct = fmtPct(outCount, inCount);
 
   return (
     <div className="relative pl-12">
@@ -449,6 +453,22 @@ function PhaseCard({ phase, stepNumber }: { phase: EtlAuditPhase; stepNumber: nu
                   {formatNumber(phase.countAfterPhase)}
                 </span>
               </div>
+            )}
+            {phase.countBeforePhase != null && phase.countAfterPhase != null && (
+              <>
+                <div>
+                  <span className="text-muted-foreground">Rejection %: </span>
+                  <span className="font-medium tabular-nums text-red-600">
+                    {phaseRejectedPct}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Pass %: </span>
+                  <span className="font-medium tabular-nums text-emerald-600">
+                    {phasePassPct}
+                  </span>
+                </div>
+              </>
             )}
             {/* <div>
               <span className="text-muted-foreground">Touched: </span>

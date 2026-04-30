@@ -42,8 +42,6 @@ interface FiltersPanelProps {
   companies: FacetOption[];
   jobTypes: JobTypeFacet[];
   topSkills: FacetOption[];
-  remoteCount: number;
-  totalCount: number;
   salaryBounds?: [number, number];
   facetsLoading?: boolean;
 }
@@ -170,7 +168,6 @@ function FacetSearch({
               className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             >
               {opt.name}
-              <span className="text-[9px] opacity-60">{opt.count}</span>
             </button>
           ))}
         {!searching && options.length === 0 && debouncedQ.trim() && (
@@ -189,8 +186,6 @@ export function FiltersPanel({
   companies,
   jobTypes,
   topSkills,
-  remoteCount,
-  totalCount,
   facetsLoading = false,
 }: FiltersPanelProps) {
   const activeFilterCount =
@@ -272,9 +267,6 @@ export function FiltersPanel({
                   }
                 >
                   Remote
-                  <span className="ml-1 text-[9px] opacity-60">
-                    {remoteCount}
-                  </span>
                 </Button>
                 <Button
                   variant={filters.isRemote === false ? 'default' : 'outline'}
@@ -288,9 +280,6 @@ export function FiltersPanel({
                   }
                 >
                   On-site
-                  <span className="ml-1 text-[9px] opacity-60">
-                    {totalCount - remoteCount}
-                  </span>
                 </Button>
               </div>
             </div>
@@ -321,9 +310,6 @@ export function FiltersPanel({
                     }
                   >
                     {JOB_TYPE_LABELS[jt.type] || jt.type}
-                    <span className="ml-1 text-[9px] opacity-60">
-                      {jt.count}
-                    </span>
                   </Button>
                 ))}
               </div>

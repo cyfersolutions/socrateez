@@ -85,8 +85,6 @@ export function JobSearchPage() {
   const [facetCompanies, setFacetCompanies] = useState<FacetOption[]>([]);
   const [facetJobTypes, setFacetJobTypes] = useState<JobTypeFacet[]>([]);
   const [facetSkills, setFacetSkills] = useState<FacetOption[]>([]);
-  const [facetRemoteCount, setFacetRemoteCount] = useState(0);
-  const [facetTotalCount, setFacetTotalCount] = useState(0);
   const [salaryBounds, setSalaryBounds] = useState<[number, number]>([
     40000, 200000,
   ]);
@@ -118,8 +116,6 @@ export function JobSearchPage() {
         setFacetCompanies(data.companies || []);
         setFacetJobTypes(data.jobTypes || []);
         setFacetSkills(data.skills || []);
-        setFacetRemoteCount(data.remoteCount || 0);
-        setFacetTotalCount(data.totalCount || 0);
         setSalaryBounds(bounds);
         setFilters((prev) => {
           const untouched =
@@ -266,8 +262,6 @@ export function JobSearchPage() {
     companies: facetCompanies,
     jobTypes: facetJobTypes,
     topSkills: facetSkills,
-    remoteCount: facetRemoteCount,
-    totalCount: facetTotalCount,
     salaryBounds,
     facetsLoading,
   };
