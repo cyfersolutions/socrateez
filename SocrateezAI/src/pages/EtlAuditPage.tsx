@@ -399,11 +399,6 @@ function PhaseCard({ phase, stepNumber }: { phase: EtlAuditPhase; stepNumber: nu
   const meta = getCategoryMeta(phase.category);
   const Icon = meta.icon;
   const totalRejected = phase.subRules.reduce((s, r) => s + r.rejectedCount, 0);
-  const inCount = Math.max(0, phase.countBeforePhase ?? 0);
-  const outCount = Math.max(0, phase.countAfterPhase ?? 0);
-  const phaseRejectedFromFlow = Math.max(0, inCount - outCount);
-  const phaseRejectedPct = fmtPct(phaseRejectedFromFlow, inCount);
-  const phasePassPct = fmtPct(outCount, inCount);
 
   return (
     <div className="relative pl-12">
@@ -453,22 +448,6 @@ function PhaseCard({ phase, stepNumber }: { phase: EtlAuditPhase; stepNumber: nu
                   {formatNumber(phase.countAfterPhase)}
                 </span>
               </div>
-            )}
-            {phase.countBeforePhase != null && phase.countAfterPhase != null && (
-              <>
-                <div>
-                  <span className="text-muted-foreground">Rejection %: </span>
-                  <span className="font-medium tabular-nums text-red-600">
-                    {phaseRejectedPct}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Pass %: </span>
-                  <span className="font-medium tabular-nums text-emerald-600">
-                    {phasePassPct}
-                  </span>
-                </div>
-              </>
             )}
             {/* <div>
               <span className="text-muted-foreground">Touched: </span>
