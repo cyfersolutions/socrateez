@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { CleanedJobData } from "../models/CleanedJobData.js";
 import {
+  exportDuplicateKeptSourceDetailsCsv,
+  exportDuplicateRule3SourceDetailsCsv,
+  rebuildDuplicateDebugFiles,
   resetCleanedCollectionAndSync,
   syncEligibleRawToCleaned,
 } from "../services/rawToCleanedService.js";
@@ -49,6 +52,36 @@ router.post("/reset-and-sync", async (req, res, next) => {
     res.json(result);
   } catch (err) {
     console.error(err);
+    next(err);
+  }
+});
+
+/** Rebuild duplicate debug JSON files with cleaned-record details by sourceRawId. */
+router.post("/duplicate-debug/rebuild", async (req, res, next) => {
+  try {
+    const result = await rebuildDuplicateDebugFiles();
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Export keptSourceRawDetails-only CSV files from duplicate debug JSON files. */
+router.post("/duplicate-debug/export-kept-csv", async (req, res, next) => {
+  try {
+    const result = await exportDuplicateKeptSourceDetailsCsv();
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Export sourceRawDetails CSV files for DUP-03 debug JSON files. */
+router.post("/duplicate-debug/export-rule3-source-csv", async (req, res, next) => {
+  try {
+    const result = await exportDuplicateRule3SourceDetailsCsv();
+    res.json(result);
+  } catch (err) {
     next(err);
   }
 });

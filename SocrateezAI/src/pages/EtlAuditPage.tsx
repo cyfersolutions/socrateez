@@ -103,7 +103,7 @@ const CATEGORY_META: Record<
   duplicate_detection: {
     label: 'Duplicate Removal',
     description:
-      'After all rows are written, computes an MD5 from a normalized full-row fingerprint (including a normalized posting date). Rows with the same fingerprint are grouped; the newest postedAt is kept and older rows are marked duplicates.',
+      'After all rows are written, computes an MD5 from title + company + city + state + country + jobType + postedDate/postDate. Rows with the same key are grouped; the newest postedAt is kept and older rows are marked duplicates.',
     icon: XCircle,
     color: 'text-red-600 bg-red-500/10',
   },
@@ -399,6 +399,10 @@ function PhaseCard({ phase, stepNumber }: { phase: EtlAuditPhase; stepNumber: nu
   const meta = getCategoryMeta(phase.category);
   const Icon = meta.icon;
   const totalRejected = phase.subRules.reduce((s, r) => s + r.rejectedCount, 0);
+  const recordsIn = phase.countBeforePhase ?? 0;
+  const recordsOut = phase.countAfterPhase ?? Math.max(0, recordsIn - totalRejected);
+  const recordsOutPct = fmtPct(recordsOut, recordsIn);
+  const removedPct = fmtPct(totalRejected, recordsIn);
 
   return (
     <div className="relative pl-12">
@@ -437,7 +441,7 @@ function PhaseCard({ phase, stepNumber }: { phase: EtlAuditPhase; stepNumber: nu
               <div>
                 <span className="text-muted-foreground">Records in: </span>
                 <span className="font-medium tabular-nums">
-                  {formatNumber(phase.countBeforePhase)}
+                  {formatNumber(recordsIn)}
                 </span>
               </div>
             )}
@@ -445,7 +449,7 @@ function PhaseCard({ phase, stepNumber }: { phase: EtlAuditPhase; stepNumber: nu
               <div>
                 <span className="text-muted-foreground">Records out: </span>
                 <span className="font-medium tabular-nums">
-                  {formatNumber(phase.countAfterPhase)}
+                  {formatNumber(recordsOut)} ({recordsOutPct})
                 </span>
               </div>
             )}
@@ -459,7 +463,7 @@ function PhaseCard({ phase, stepNumber }: { phase: EtlAuditPhase; stepNumber: nu
               <div>
                 <span className="text-muted-foreground">Removed: </span>
                 <span className="font-medium tabular-nums text-red-600">
-                  {formatNumber(totalRejected)}
+                  {formatNumber(totalRejected)} ({removedPct})
                 </span>
               </div>
             )}
@@ -468,7 +472,7 @@ function PhaseCard({ phase, stepNumber }: { phase: EtlAuditPhase; stepNumber: nu
           {/* Sub-rules summary */}
           <div className="space-y-2">
             {phase.subRules.map((rule) => (
-              <SubRuleRow key={rule.ruleId} rule={rule} />
+              <SubRuleRow key={rule.ruleId} rule={rule} phaseRecordsIn={recordsIn} />
             ))}
           </div>
 
@@ -514,10 +518,14 @@ function PhaseCard({ phase, stepNumber }: { phase: EtlAuditPhase; stepNumber: nu
 
 function SubRuleRow({
   rule,
+  phaseRecordsIn,
 }: {
   rule: { ruleId: string; ruleDescription: string; affectedCount: number; rejectedCount: number };
+  phaseRecordsIn: number;
 }) {
   const isReject = rule.rejectedCount > 0;
+  const affectedPct = fmtPct(rule.affectedCount, phaseRecordsIn);
+  const removedPct = fmtPct(rule.rejectedCount, phaseRecordsIn);
   return (
     <div className="flex items-center gap-3 py-1.5">
       <div className="shrink-0">
@@ -532,11 +540,11 @@ function SubRuleRow({
       </div>
       <div className="flex items-center gap-3 shrink-0 text-xs tabular-nums">
         <span className="text-muted-foreground">
-          {formatNumber(rule.affectedCount)} affected
+          {formatNumber(rule.affectedCount)} affected ({affectedPct})
         </span>
         {isReject && (
           <span className="text-red-600">
-            {formatNumber(rule.rejectedCount)} removed
+            {formatNumber(rule.rejectedCount)} removed ({removedPct})
           </span>
         )}
       </div>

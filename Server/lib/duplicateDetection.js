@@ -2,63 +2,48 @@ import crypto from "crypto";
 
 /**
  * Compute a deterministic hash for duplicate grouping.
- * Key = normalized, stable fingerprint of the cleaned row.
- * We intentionally include most business fields (not just a handful),
- * and normalize posting date first so equivalent rows hash the same.
+ * Key = title + company + city + state + country + jobType + postedDate/postDate.
  */
 export function computeDuplicateHash(doc) {
-  const canonical = buildCanonicalRowFingerprint(doc);
+  const canonical = buildCanonicalDuplicateKey(doc);
   return crypto.createHash("md5").update(canonical).digest("hex");
 }
 
-function normalizePostedDateKey(doc) {
-  const postedAt = doc?.postedAt;
-  if (postedAt) {
-    const d = new Date(postedAt);
-    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
-  }
-  const raw = doc?.["Post Date"];
-  return raw == null ? "" : String(raw).trim().toLowerCase();
+function normalizePart(v) {
+  if (v == null) return "";
+  return String(v).trim().toLowerCase();
 }
 
-function normalizeValue(v) {
-  if (v == null) return null;
-  if (Array.isArray(v)) return v.map(normalizeValue);
-  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString().slice(0, 10);
-  if (typeof v === "object") {
-    const out = {};
-    for (const k of Object.keys(v).sort()) {
-      out[k] = normalizeValue(v[k]);
+function normalizePostedDatePart(doc) {
+  const dateCandidates = [
+    doc?.postedDate,
+    doc?.postDate,
+    doc?.[("Post Date")],
+    doc?.postedAt,
+  ];
+  for (const candidate of dateCandidates) {
+    if (candidate == null || String(candidate).trim() === "") continue;
+    const d = new Date(candidate);
+    if (!Number.isNaN(d.getTime())) {
+      return d.toISOString().slice(0, 10);
     }
-    return out;
+    return normalizePart(candidate);
   }
-  if (typeof v === "string") return v.trim().toLowerCase();
-  return v;
+  return "";
 }
 
-function buildCanonicalRowFingerprint(doc) {
-  const excluded = new Set([
-    "_id",
-    "__v",
-    "sourceRawId",
-    "isDuplicate",
-    "duplicateHash",
-    "etlRulesApplied",
-    "createdAt",
-    "updatedAt",
-  ]);
+function buildCanonicalDuplicateKey(doc) {
+  const parts = [
+    normalizePart(doc?.normalizedTitle ?? doc?.title ?? doc?.["Job Title"] ?? doc?.["Listing Title"]),
+    normalizePart(doc?.canonicalCompany ?? doc?.company ?? doc?.Company),
+    normalizePart(doc?.normalizedCity ?? doc?.city ?? doc?.City),
+    normalizePart(doc?.normalizedState ?? doc?.state ?? doc?.State),
+    normalizePart(doc?.normalizedCountry ?? doc?.country ?? doc?.Country),
+    normalizePart(doc?.jobType),
+    normalizePostedDatePart(doc),
+  ];
 
-  const payload = {};
-  for (const key of Object.keys(doc || {}).sort()) {
-    if (excluded.has(key)) continue;
-    if (key === "postedAt" || key === "Post Date") continue;
-    payload[key] = normalizeValue(doc[key]);
-  }
-
-  // Date normalization step requested: force one comparable date key.
-  payload.postedDateNormalized = normalizePostedDateKey(doc);
-
-  return JSON.stringify(payload);
+  return parts.join("|");
 }
 
 /**
@@ -105,15 +90,15 @@ export function detectDuplicates(docs, tracker) {
 
   if (tracker) {
     if (dupCount > 0) {
-      tracker.recordBulk("DUP-01", "duplicate_detection", "Duplicate group: same normalized full-row fingerprint hash (with posting date normalized first) as another cleaned row — older copies flagged isDuplicate=true.", {
+      tracker.recordBulk("DUP-01", "duplicate_detection", "Duplicate group: same hash computed from title + company + city + state + country + jobType + postedDate/postDate — older copies flagged isDuplicate=true.", {
         affected: dupCount,
       });
-      tracker.recordBulk("DUP-02", "duplicate_detection", "Within each duplicate fingerprint group, the newest postedAt is kept as canonical; all older rows in that group are marked duplicates.", {
+      tracker.recordBulk("DUP-02", "duplicate_detection", "Within each duplicate hash group, the newest postedAt is kept as canonical; all older rows in that group are marked duplicates.", {
         affected: groups.size - uniqueCount,
       });
     }
     if (uniqueCount > 0) {
-      tracker.recordBulk("DUP-03", "duplicate_detection", "Unique hash — no other cleaned job shared this fingerprint in the batch; isDuplicate=false.", {
+      tracker.recordBulk("DUP-03", "duplicate_detection", "Unique hash — no other cleaned job shared this title/company/city/state/country/jobType/postedDate key in the batch; isDuplicate=false.", {
         affected: uniqueCount,
       });
     }

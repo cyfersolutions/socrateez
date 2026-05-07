@@ -2,7 +2,7 @@ import { RawJobData } from "../models/RawJobData.js";
 import { CleanedJobData } from "../models/CleanedJobData.js";
 import { EtlAuditLog } from "../models/EtlAuditLog.js";
 import { JobField } from "../models/jobDataFields.js";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { normalizeSalaryForEtl, SALARY_MIN_ANNUAL } from "../lib/salaryNormalization.js";
@@ -456,13 +456,13 @@ async function runDuplicateDetection(tracker) {
     tracker.recordBulk(
       "DUP-01",
       "duplicate_detection",
-      "Duplicate group: same normalized full-row fingerprint hash (with posting date normalized first) as another cleaned row — older copies flagged isDuplicate=true.",
+      "Duplicate group: same hash computed from title + company + city + state + country + jobType + postedDate/postDate — older copies flagged isDuplicate=true.",
       { affected: dupCount },
     );
     tracker.recordBulk(
       "DUP-02",
       "duplicate_detection",
-      "Within each duplicate fingerprint group, the newest postedAt is kept as canonical; all older rows in that group are marked duplicates.",
+      "Within each duplicate hash group, the newest postedAt is kept as canonical; all older rows in that group are marked duplicates.",
       { affected: duplicateGroups },
     );
   }
@@ -470,7 +470,7 @@ async function runDuplicateDetection(tracker) {
     tracker.recordBulk(
       "DUP-03",
       "duplicate_detection",
-      "Unique hash — no other cleaned job shared this fingerprint in the batch; isDuplicate=false.",
+      "Unique hash — no other cleaned job shared this title/company/city/state/country/jobType/postedDate key in the batch; isDuplicate=false.",
       { affected: uniqueCount },
     );
   }
@@ -611,6 +611,168 @@ export async function resetCleanedCollectionAndSync() {
   };
 }
 
+/**
+ * Rebuild duplicate debug JSON files by attaching current cleaned docs
+ * for sourceRawId/keptSourceRawId references found in each sample.
+ */
+export async function rebuildDuplicateDebugFiles() {
+  await mkdir(DUP_RULE_SAMPLE_DIR, { recursive: true });
+  const allFiles = await readdir(DUP_RULE_SAMPLE_DIR);
+  const jsonFiles = allFiles.filter((name) => name.toLowerCase().endsWith(".json"));
+  if (jsonFiles.length === 0) {
+    return { directory: DUP_RULE_SAMPLE_DIR, filesFound: 0, filesUpdated: 0, totalExamplesUpdated: 0 };
+  }
+
+  const runStartedAt = new Date().toISOString();
+  let filesUpdated = 0;
+  let totalExamplesUpdated = 0;
+  const updatedFiles = [];
+
+  for (const fileName of jsonFiles) {
+    const filePath = path.join(DUP_RULE_SAMPLE_DIR, fileName);
+    const raw = await readFile(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    const originalExamples = Array.isArray(parsed?.examples) ? parsed.examples : [];
+    if (originalExamples.length === 0) continue;
+
+    const ids = collectSampleSourceIds(originalExamples);
+    const cleanedDocs = await CleanedJobData.find({ sourceRawId: { $in: ids } }).lean();
+    const bySourceRawId = new Map(
+      cleanedDocs.map((doc) => [String(doc.sourceRawId ?? ""), sanitizeCleanedDocForDebug(doc)])
+    );
+
+    const enrichedExamples = [];
+    for (const sample of originalExamples) {
+      const enriched = enrichDuplicateSample(sample, bySourceRawId);
+      enrichedExamples.push(enriched);
+    }
+
+    const output = {
+      ...parsed,
+      generatedAt: runStartedAt,
+      rebuiltAt: runStartedAt,
+      sampleCount: enrichedExamples.length,
+      examples: enrichedExamples,
+    };
+
+    await writeFile(filePath, JSON.stringify(output, null, 2), "utf8");
+    filesUpdated++;
+    totalExamplesUpdated += enrichedExamples.length;
+    updatedFiles.push({
+      fileName,
+      ruleId: parsed?.ruleId ?? null,
+      examples: enrichedExamples.length,
+      missingSourceRawDetails: countMissingDetails(enrichedExamples, "sourceRawDetails"),
+      missingKeptSourceRawDetails: countMissingDetails(enrichedExamples, "keptSourceRawDetails"),
+    });
+  }
+
+  return {
+    directory: DUP_RULE_SAMPLE_DIR,
+    filesFound: jsonFiles.length,
+    filesUpdated,
+    totalExamplesUpdated,
+    updatedFiles,
+  };
+}
+
+/**
+ * Export keptSourceRawDetails from duplicate debug JSON files into CSV files.
+ * Creates one CSV per JSON file (same base name).
+ */
+export async function exportDuplicateKeptSourceDetailsCsv() {
+  await mkdir(DUP_RULE_SAMPLE_DIR, { recursive: true });
+  const allFiles = await readdir(DUP_RULE_SAMPLE_DIR);
+  const jsonFiles = allFiles.filter((name) => name.toLowerCase().endsWith(".json"));
+  if (jsonFiles.length === 0) {
+    return { directory: DUP_RULE_SAMPLE_DIR, filesFound: 0, filesExported: 0 };
+  }
+
+  let filesExported = 0;
+  let totalRows = 0;
+  const exportedFiles = [];
+
+  for (const fileName of jsonFiles) {
+    const filePath = path.join(DUP_RULE_SAMPLE_DIR, fileName);
+    const raw = await readFile(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    const examples = Array.isArray(parsed?.examples) ? parsed.examples : [];
+    const keptRows = examples
+      .map((row) => row?.keptSourceRawDetails ?? null)
+      .filter((details) => details && typeof details === "object");
+
+    const flattenedRows = keptRows.map((row) => flattenObject(row));
+    const csv = toCsv(flattenedRows);
+    const csvName = fileName.replace(/\.json$/i, "-keptSourceRawDetails.csv");
+    const csvPath = path.join(DUP_RULE_SAMPLE_DIR, csvName);
+    await writeFile(csvPath, csv, "utf8");
+
+    filesExported++;
+    totalRows += flattenedRows.length;
+    exportedFiles.push({
+      sourceJson: fileName,
+      csvFile: csvName,
+      rows: flattenedRows.length,
+    });
+  }
+
+  return {
+    directory: DUP_RULE_SAMPLE_DIR,
+    filesFound: jsonFiles.length,
+    filesExported,
+    totalRows,
+    exportedFiles,
+  };
+}
+
+/**
+ * Export sourceRawDetails-only CSV for DUP-03 files.
+ * Writes one CSV per DUP-03 JSON file.
+ */
+export async function exportDuplicateRule3SourceDetailsCsv() {
+  await mkdir(DUP_RULE_SAMPLE_DIR, { recursive: true });
+  const allFiles = await readdir(DUP_RULE_SAMPLE_DIR);
+  const targetFiles = allFiles.filter(
+    (name) => name.toLowerCase().endsWith(".json") && name.includes("-DUP-03")
+  );
+  if (targetFiles.length === 0) {
+    return { directory: DUP_RULE_SAMPLE_DIR, filesFound: 0, filesExported: 0, totalRows: 0 };
+  }
+
+  const exportedFiles = [];
+  let totalRows = 0;
+  for (const fileName of targetFiles) {
+    const filePath = path.join(DUP_RULE_SAMPLE_DIR, fileName);
+    const raw = await readFile(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    const examples = Array.isArray(parsed?.examples) ? parsed.examples : [];
+    const sourceRows = examples
+      .map((row) => row?.sourceRawDetails ?? null)
+      .filter((details) => details && typeof details === "object");
+
+    const flattenedRows = sourceRows.map((row) => flattenObject(row));
+    const csv = toCsv(flattenedRows);
+    const csvName = fileName.replace(/\.json$/i, "-sourceRawDetails.csv");
+    const csvPath = path.join(DUP_RULE_SAMPLE_DIR, csvName);
+    await writeFile(csvPath, csv, "utf8");
+
+    totalRows += flattenedRows.length;
+    exportedFiles.push({
+      sourceJson: fileName,
+      csvFile: csvName,
+      rows: flattenedRows.length,
+    });
+  }
+
+  return {
+    directory: DUP_RULE_SAMPLE_DIR,
+    filesFound: targetFiles.length,
+    filesExported: exportedFiles.length,
+    totalRows,
+    exportedFiles,
+  };
+}
+
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 async function saveAuditLogs(tracker) {
@@ -655,4 +817,88 @@ async function writeDuplicateRuleSamples(dupRuleSamples) {
     return writeFile(filePath, JSON.stringify(payload, null, 2), "utf8");
   });
   await Promise.all(fileWrites);
+}
+
+function collectSampleSourceIds(examples) {
+  const ids = new Set();
+  for (const sample of examples) {
+    const sourceRawId = sample?.sourceRawId;
+    const keptSourceRawId = sample?.keptSourceRawId;
+    if (typeof sourceRawId === "string" && sourceRawId.trim()) ids.add(sourceRawId);
+    if (typeof keptSourceRawId === "string" && keptSourceRawId.trim()) ids.add(keptSourceRawId);
+  }
+  return [...ids];
+}
+
+function enrichDuplicateSample(sample, bySourceRawId) {
+  const sourceRawId = typeof sample?.sourceRawId === "string" ? sample.sourceRawId : null;
+  const keptSourceRawId =
+    typeof sample?.keptSourceRawId === "string" ? sample.keptSourceRawId : null;
+
+  return {
+    ...sample,
+    sourceRawDetails: sourceRawId ? bySourceRawId.get(sourceRawId) ?? null : null,
+    keptSourceRawDetails: keptSourceRawId ? bySourceRawId.get(keptSourceRawId) ?? null : null,
+  };
+}
+
+function sanitizeCleanedDocForDebug(doc) {
+  if (!doc) return null;
+  const { __v, ...rest } = doc;
+  return rest;
+}
+
+function countMissingDetails(examples, key) {
+  let missing = 0;
+  for (const row of examples) {
+    if (Object.prototype.hasOwnProperty.call(row, key) && row[key] == null) {
+      missing++;
+    }
+  }
+  return missing;
+}
+
+function flattenObject(input, prefix = "", out = {}) {
+  if (input == null || typeof input !== "object") return out;
+  for (const [key, value] of Object.entries(input)) {
+    const col = prefix ? `${prefix}.${key}` : key;
+    if (value == null) {
+      out[col] = "";
+      continue;
+    }
+    if (value instanceof Date) {
+      out[col] = value.toISOString();
+      continue;
+    }
+    if (Array.isArray(value)) {
+      out[col] = JSON.stringify(value);
+      continue;
+    }
+    if (typeof value === "object") {
+      flattenObject(value, col, out);
+      continue;
+    }
+    out[col] = String(value);
+  }
+  return out;
+}
+
+function toCsv(rows) {
+  const headers = [...new Set(rows.flatMap((row) => Object.keys(row)))];
+  if (headers.length === 0) return "";
+
+  const csvRows = [headers.join(",")];
+  for (const row of rows) {
+    const values = headers.map((header) => escapeCsvCell(row[header] ?? ""));
+    csvRows.push(values.join(","));
+  }
+  return `${csvRows.join("\n")}\n`;
+}
+
+function escapeCsvCell(value) {
+  const str = String(value);
+  if (/[",\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, "\"\"")}"`;
+  }
+  return str;
 }
