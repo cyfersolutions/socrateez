@@ -539,9 +539,11 @@ function SubRuleRow({
         <p className="text-sm text-foreground">{rule.ruleDescription}</p>
       </div>
       <div className="flex items-center gap-3 shrink-0 text-xs tabular-nums">
-        <span className="text-muted-foreground">
-          {formatNumber(rule.affectedCount)} affected ({affectedPct})
-        </span>
+        {!isReject && (
+          <span className="text-muted-foreground">
+            {formatNumber(rule.affectedCount)} affected ({affectedPct})
+          </span>
+        )}
         {isReject && (
           <span className="text-red-600">
             {formatNumber(rule.rejectedCount)} removed ({removedPct})
